@@ -1,0 +1,27 @@
+=DawinsLaw - Simple Genetic Algorithm
+A really simple gem for using a genetic algorithm.
+
+==Usage
+
+===Basic Usage
+
+    require 'darwins_law'
+
+    ga = GA.new(:fitness_function => Proc.new{|genome,current_generation|
+      #some code to evaluate the genomes 'performance' and return a score ie;
+      genome.inject{|i,j| i + j}
+    })
+    ga.evolve
+
+
+
+
+==Install
+
+Add this line to your application's Gemfile:
+
+    gem 'darwins_law'
+
+Or install it yourself as:
+
+    $ gem install darwins_law
