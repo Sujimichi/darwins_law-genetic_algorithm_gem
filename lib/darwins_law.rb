@@ -2,9 +2,13 @@ require "darwins_law/version"
 require "darwins_law/genetic_algorithm"
 
 module DarwinsLaw
-  # Your code goes here...
+  class GA < GeneticAlgorithm
+  end
 end
 
-class TestThing
+class TestThing < GeneticAlgorithm
+  include PopulationSorter
+end
 
+class GA < GeneticAlgorithm
 end

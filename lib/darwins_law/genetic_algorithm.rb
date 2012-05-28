@@ -1,6 +1,7 @@
-#Micro Genetic Algorithm by Jeremy Comer
-class GeneticAlgorithm
+class GeneticAlgorithm::Base
+
   attr_accessor :population, :popsize, :generations, :mutation_rate, :mutation_type, :cross_over_rate, :fitness_function
+  
   def initialize args = {}
     @popsize = args[:popsize] || 30                   #Number of members (genomes) in the population
     @gene_length = args[:gene_length] || 10           #Number of bit (genes) in a genome
@@ -15,7 +16,7 @@ class GeneticAlgorithm
   def evolve
     @generations.times do |current_generation|
       #Select two members at random and sort by fitness, select.last => fitter
-      select = (0..@popsize-1).sort_by{rand}[0,2].sort_by {|ind| @fitness_function.call(@population[ind]) }      
+      select = (0..@popsize-1).sort_by{rand}[0,2].sort_by {|ind| fitness(@population[ind]) }      
       @population[select.first] = @population[select.first].zip(@population[select.last]).collect { |genes|
         pos_mutate( genes[ (rand<@cross_over_rate ? 1 : 0) ] ) #Replace % of weaker member's genes with fitter member's with a posibility of mutation.
       } 
@@ -26,4 +27,20 @@ class GeneticAlgorithm
     return n if rand >= @mutation_rate/@gene_length #convert to per gene based muation rate
     @mutation_type.eql?(:decimal) ? (n + (rand - 0.5)).round(2) : (n-1).abs #either binary mutation (1 -> 0, 0 -> 1) or +/- small decimal value.
   end
+
+  def fitness genome
+    @fitness_function.call(genome)
+  end
+end
+
+module PopulationSorter
+
+  def ordered_population
+    population.sort_by{|member| fitness(member)}.reverse
+  end
+
+  def best
+    ordered_population.first
+  end
+
 end
