@@ -1,7 +1,8 @@
 require 'rubygems'
 require 'bundler/setup'
 
-require './lib/darwins_law/mga.rb' 
+require './lib/darwins_law/genetic_algorithm.rb' 
+
 
 RSpec.configure do |config|
   # some (optional) config here
