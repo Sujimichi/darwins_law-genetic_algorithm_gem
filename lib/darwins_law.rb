@@ -7,7 +7,7 @@ module DarwinsLaw
 end
 
 class TestThing < GeneticAlgorithm
-  include PopulationSorter
+  include PopulationTools
 end
 
 class GA < GeneticAlgorithm
