@@ -42,18 +42,17 @@ describe GeneticAlgorithm do
 
     it 'should run evolution with custom functions' do 
       @ga = GeneticAlgorithm.new(
-        :generations => 10000, 
+        :generations => 1000, 
         :gene_length => 4, 
         :mutation_rate => 0.3,
-        :init_pop_with    => Proc.new{ (10 * rand) - 5 },
+        :init_pop_with    => Proc.new{ rand*10 },
         :fitness_function => Proc.new{|genome| 0 - (0 - genome.inject{|i,j| i + j}).abs },
-        :mutation_function=> Proc.new{|gene| (gene + (rand - 0.5)) }
+        :mutation_function=> Proc.new{|gene| gene + rand.round }
+
       )
-      @ga.population.flatten.max.should > 4.2
-      @ga.population.flatten.min.should < -4.2
-      @ga.evolve
-      @ga.population.flatten.max.should > 1.2
-      @ga.population.flatten.min.should < -1.2
+      @ga.population.flatten.max.should > 8
+      @ga.evolve     
+      @ga.population.flatten.max.round.should_not > 3
     end
 
   end

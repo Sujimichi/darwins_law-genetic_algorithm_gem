@@ -45,6 +45,16 @@ class GeneticAlgorithm < DarwinianProcess
     @verbose = {:status => 500, :breeding_details => true} if args[:verbose]
 
   end
+
+
+  def evolve n_generations = @generations
+    n_generations.times do |i|
+      microbial_recombination #only doing microbial atm.  will have options to select recom_method.
+      @current_generation += 1
+      show_current_status if @verbose && @verbose[:status] && ((i+1)/@verbose[:status] == (i+1)/@verbose[:status].to_f)     
+    end
+  end
+  
 end
 
 

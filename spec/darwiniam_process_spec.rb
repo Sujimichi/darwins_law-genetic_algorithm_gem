@@ -6,33 +6,56 @@ describe DarwinianProcess do
   before(:each) do 
     @darwin = DarwinianProcess.new
     @darwin.gene_length = 10    
+    @pop = Array.new(10){Array.new(10){rand.round} }
+    @darwin.instance_variable_set("@population", @pop)
+    #Kernel.stub!(:rand).and_return(*[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])    
   end
 
   describe "selection" do 
-    before(:each) do 
-      i=0
-      @pop = Array.new(10){i+=1} 
-      @darwin.instance_variable_set("@population", @pop)
-      #Kernel.stub!(:rand).and_return(*[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-    end
-    it 'should return two members from the population' do 
-      @darwin.select_pair.should be_a(Array)
-      @darwin.select_pair.each{|selected| @pop.should be_include(selected)}
-    end
-    it 'should not return the same two members' do 
-      200.times{
-        pair = @darwin.select_pair
-        pair.first.should_not == pair.last
-      }
-    end
-    
-    it 'should return a sorted pair (fittest first)' do 
-      @darwin.stub!(:fitness_of).and_return(*[4,5])
-      @darwin.stub!(:select_pair => [[1,1,1,1,0],[1,1,1,1,1]])
-      pair = @darwin.select_sorted_pair
-      pair.should == [[1,1,1,1,1],[1,1,1,1,0]]
+
+    it 'should return an index to n random members in the population' do 
+      @darwin.select_random(2).size.should == 2
+      @darwin.select_random(3).size.should == 3
+      500.times do 
+        index = @darwin.select_random(2)
+        index.min.should >= 0
+        index.max.should <= 29
+      end   
     end
 
+    it 'should not return the same two members' do 
+      200.times{
+        index = @darwin.select_random(2)
+        index.first.should_not == index.last
+      }
+    end
+
+
+    it 'should return two members from the population by given index' do 
+      selected = @darwin.select_from_population([4,8])
+      selected.map{|sel| @pop.index(sel)}.should == [4,8]
+    end
+
+    
+
+
+
+  end
+
+  describe "competition" do 
+    it 'should return an index to n random members with the index sorted by fitness of member first' do
+      20.times do 
+        index = @darwin.sorted_random_members(2)
+        @pop[index.first].inject{|i,j| i+j}.should >= @pop[index.last].inject{|i,j| i+j}
+      end
+    end
+
+    it 'should return a sorted pair (fittest first)' do 
+      @darwin.stub!(:fitness_of).and_return(*[4,5])
+      @darwin.stub!(:select_from_population => [[1,1,1,1,0],[1,1,1,1,1]])
+      pair = @darwin.select_sorted_pair
+      pair.should == [[1,1,1,1,1],[1,1,1,1,0]]
+    end 
   end
   
   describe "recombination" do 
@@ -101,6 +124,26 @@ describe DarwinianProcess do
       @darwin.apply_possible_muation(3).should == 3
       @darwin.apply_possible_muation(3).should == 6
     end
+
+    it 'should apply mutation to a gene based on muation_rate when gene is returned from a block' do 
+      Kernel.stub!(:rand).and_return(*[0.5, 0.001])      
+      @darwin.mutation_rate = 0.2
+      @darwin.mutation_function = Proc.new{|gene| gene*2}
+      @darwin.apply_possible_muation{
+        2+1
+      }.should == 3
+      @darwin.apply_possible_muation{
+        3+1
+      }.should == 8
+    end
+
+    it 'should mutate with a high mutation rate' do 
+      @darwin.mutation_function = Proc.new{|gene| gene*2}
+      @darwin.gene_length = 10
+      @darwin.mutation_rate = 10
+      @darwin.apply_possible_muation{3+1}.should == 8
+    end
+  
   end
 
   describe "fitness evaluation" do 
