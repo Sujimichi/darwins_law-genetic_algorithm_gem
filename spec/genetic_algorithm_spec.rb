@@ -19,7 +19,7 @@ describe GeneticAlgorithm do
   describe "default evolution" do 
 
     it 'should increase sum of genomes with summation fitness func' do 
-      @ga = GeneticAlgorithm.new(:generations => 100, :gene_length => 4)
+      @ga = GeneticAlgorithm.new(:generations => 200, :gene_length => 4)
       sum = @ga.population.flatten.inject{|i,j| i+j}
       @ga.evolve
       sum2 = @ga.population.flatten.inject{|i,j| i+j}
@@ -28,7 +28,7 @@ describe GeneticAlgorithm do
     end
 
     it 'should descrease sum of genomes with subtraction fitness func' do 
-      @ga = GeneticAlgorithm.new(:generations => 100, :gene_length => 4, :fitness_function => Proc.new{|genome|   genome.inject{|i,j| i - j} })
+      @ga = GeneticAlgorithm.new(:generations => 200, :gene_length => 4, :fitness_function => Proc.new{|genome|   genome.inject{|i,j| i - j} })
       sum = @ga.population.flatten.inject{|i,j| i+j}
       @ga.evolve
       sum2 = @ga.population.flatten.inject{|i,j| i+j}
@@ -170,18 +170,36 @@ describe GeneticAlgorithm do
   describe "evolving a population" do 
 
     it 'should evolve a population' do 
-      @ga = GeneticAlgorithm.new(:popsize => 20, :gene_length => 5, :init_pop_with => 0, :mutation_rate => 0.1, :mutation_function => Proc.new{|gene|
+      @ga = GeneticAlgorithm.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3, :mutation_function => Proc.new{|gene|
         gene + ((rand*1).round.eql?(1) ? 1 : -1)
       })
-      @ga.population.flatten.should_not be_include(1)
-      @ga.population.flatten.should_not be_include(4)
+      @ga.population.flatten.max.should <= 1
       @ga.evolve(100)
-      @ga.population.flatten.should be_include(1)
-      @ga.population.flatten.should_not be_include(4)
-      @ga.evolve(400)
-      @ga.population.flatten.should be_include(4)
+      @ga.population.flatten.max.should <= 4
+      @ga.evolve(500)
+      @ga.population.flatten.max.should >= 4
+
     end
   
+  end
+
+
+  describe "tracking best so far" do 
+    it 'should evolve a population' do 
+      @ga = GeneticAlgorithm.new(:popsize => 20, :gene_length => 5, :init_pop_with => 0, :mutation_rate => 0.1, :mutation_function => :binary)
+      @ga.best.should be_a(Hash)
+      @ga.best[:fitness].should be_nil
+      @ga.best[:genome].should be_empty
+
+      @ga.evolve(5)
+      @ga.best[:fitness].should_not be_nil
+      @ga.best[:genome].should_not be_empty
+      best1 = @ga.best
+
+      @ga.evolve
+      @ga.best[:fitness].should == 5
+      @ga.best[:genome].should == [1,1,1,1,1]
+    end
   end
 
 end
