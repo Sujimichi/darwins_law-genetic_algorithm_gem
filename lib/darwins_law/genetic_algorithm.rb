@@ -1,24 +1,15 @@
 
 class GeneticAlgorithm < DarwinianProcess
   include Reporter
-  include MatingRituals
   include PopulationTools
 
   attr_accessor :population, :popsize, :gene_length, :generations, :mutation_rate, :mutation_function, :cross_over_rate, :fitness_function, :cache, :verbose, :best
   
-  def initialize args = {}
-    @generations = args[:generations] || 500          #Number of cycles to perform
-    @gene_length = args[:gene_length] || 10           #Number of bit (genes) in a genome
-    @cross_over_rate = args[:cross_over_rate] || 0.7  #Prob. of selecting gene from fitter member during recombination
-    
-    #define mutation rate and function
-    @mutation_rate = args[:mutation_rate] || 0.1      #Per genome prob. of mutation (see readme)   
-    @mutation_function = args[:mutation_function] || :decimal
-    @mutation_function = Proc.new{|n| (n + (rand - 0.5)) } if @mutation_function.eql?(:decimal)
-    @mutation_function = Proc.new{|n| (n-1).abs } if @mutation_function.eql?(:binary)
 
-    #define fitness function
-    @fitness_function = args[:fitness_function] || args[:fitness] || Proc.new{|genome| genome.inject{|i,j| i+j} }
+  def initialize args = {}
+    super
+    @breeding_type = :microbial
+    @cross_over_rate = args[:cross_over_rate] || 0.7  #Prob. of selecting gene from fitter member during recombination
 
     #Initialize population    
     if args[:population]
@@ -38,22 +29,30 @@ class GeneticAlgorithm < DarwinianProcess
     @cache_fitness = args[:cache_fitness] || true
     @pheno_cache = {}
 
-    @best = {:genome => [], :fitness => nil}
 
-    @current_generation = 0
-    #@verbose = {:status => 100, :breeding_details => true}
     @verbose = {:status => 500, :breeding_details => true} if args[:verbose]
 
   end
 
 
-  def evolve n_generations = @generations
-    n_generations.times do |i|
-      microbial_recombination #only doing microbial atm.  will have options to select recom_method.
-      @current_generation += 1
-      show_current_status if @verbose && @verbose[:status] && ((i+1)/@verbose[:status] == (i+1)/@verbose[:status].to_f)     
+  def fitness_of genome
+    pheno_expresion = ""
+    unless @cache_fitness  #return fitness as norm if caching is off   
+      fitness = @fitness_function.call(genome, @current_generation, pheno_expresion)
+    else
+      @cache[genome] = @fitness_function.call(genome, @current_generation, pheno_expresion) unless @cache[genome] #update cache if value not present
+      @pheno_cache[genome] = pheno_expresion unless @pheno_cache[genome] || pheno_expresion.empty?
+      fitness = @cache[genome] #return cached value
     end
-  end
+
+    @current_is_new_best = false
+    if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
+      @current_is_new_best = true
+      @best = {:genome => genome, :fitness => fitness}
+    end
+    fitness
+  end  
+
   
 end
 

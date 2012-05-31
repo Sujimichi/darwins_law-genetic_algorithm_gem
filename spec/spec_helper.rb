@@ -7,3 +7,10 @@ RSpec.configure do |config|
   # some (optional) config here
 end
 
+def assert_genes_increasing_in_value ga = @ga
+  ga.population.flatten.max.should <= 1
+  ga.evolve(100)
+  ga.population.flatten.max.should >= 1
+  ga.evolve(500)
+  ga.population.flatten.max.should >= 4
+end

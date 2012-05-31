@@ -1,24 +1,36 @@
 class DarwinianProcess
+  include MatingRituals
+  attr_accessor :cross_over_rate, :mutation_rate, :mutation_function, :gene_length, :population
 
-  attr_accessor :cross_over_rate, :mutation_rate, :mutation_function, :gene_length
+  def initialize args = {}
+    @breeding_type = :standard
+    @cross_over_rate = args[:cross_over_rate] || 0.5  #prob. of selecting gene from fitter member during recombination
 
-  def initialize
-    @cross_over_rate = 0.5
-    @mutation_rate = 0.1
-    @mutation_function = Proc.new{|gene| gene + (rand - 0.5) }
-    @fitness_function  = Proc.new{|genome| genome.inject{|i,j| i + j }}
+    @current_generation = 0
+    @generations = args[:generations] || 500          #Number of cycles to perform
+    @gene_length = args[:gene_length] || 10           #Number of bit (genes) in a genome
+    
+
+
+    #define mutation rate and function
+    @mutation_rate = args[:mutation_rate] || 0.1      #Per genome prob. of mutation (see readme)   
+    @mutation_function = args[:mutation_function] || :decimal
+    @mutation_function = Proc.new{|gene| gene + (rand - 0.5) } if @mutation_function.eql?(:decimal)
+    @mutation_function = Proc.new{|gene| (gene-1).abs } if @mutation_function.eql?(:binary)    
+        
+    #define fitness function
+    @fitness_function = args[:fitness_function] || args[:fitness] || Proc.new{|genome| genome.inject{|i,j| i+j} }
+
+    @population = Array.new(2){Array.new(10){rand.round}}
+    @best = {:genome => [], :fitness => nil}
+    @verbose = false
   end
 
   def evolve n_generations = @generations
-    n_generations.times do |i|   
-      breeding_pair = from_population( select_random(2) )#pick two members at random from population 
-      offspring = recombine *breeding_pair #and produce an offspring by combining thier dna (and maybe a little mutation)      
-      contestant_index = select_random(1)         #select random member (as contestant) and keep track of index
-      contestant = @population[contestant_index]  #select the contestant from pop
-      winner = [contestant, offspring].sort_by{|genome| fitness_of(genome)}.last #sort contestant and offspring by fitness and select winner
-      @population[contestant_index] = winner #put the winner in the contestants place in the population
+    n_generations.times do |i|
+      self.send("#{@breeding_type}_breeding")
       @current_generation += 1
-      #show_current_status if @verbose && @verbose[:status] && ((i+1)/@verbose[:status] == (i+1)/@verbose[:status].to_f)     
+      show_current_status if @verbose && @verbose[:status] && ((i+1)/@verbose[:status] == (i+1)/@verbose[:status].to_f)     
     end
   end
 
@@ -37,11 +49,21 @@ class DarwinianProcess
     sel_index.map{|index| @population[index]}  #select members from pop by randomly generated index
   end
   alias from_population select_from_population
-  alias select_pair select_from_population
 
+   
+  ####
+  ##Competition
+  #
+
+  def fitness_of genome      
+    fitness = @fitness_function.call(genome)
+    @best = {:genome => genome, :fitness => fitness} if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
+    fitness
+  end
+  
   ##Select and Compete
   #return random indexes to members in population, sorted with the fittest member first
-  def sorted_random_members n = 2
+  def select_sorted_random_members n = 2
     select_random(n).sort_by{|index| fitness_of(@population[index]) }.reverse
   end
 
@@ -60,11 +82,7 @@ class DarwinianProcess
   #order if genomes is important when not using a 0.5 cross_over_rate.  genomes should be fittest first.
   def recombine *genomes
     fitter, weaker = genomes
-    weaker.zip(fitter).map{ |genes| 
-      apply_possible_muation{
-        genes[ (random<@cross_over_rate ? 1 : 0) ] 
-      }
-    }
+    fitter.zip(weaker).map{ |genes| with_possible_muation{ genes[ (random<@cross_over_rate ? 0 : 1) ] } }
   end
 
 
@@ -81,35 +99,18 @@ class DarwinianProcess
 
   #possibly applies a mutation to the given gene based on @mutation_rate
   #gene can be given as an arg, or returned by the given block.
-  def apply_possible_muation gene=nil, &blk
+  def with_possible_muation gene=nil, &blk
     gene = yield if blk #get gene as result of block
     return gene if random >= @mutation_rate/@gene_length.to_f #convert to per gene based muation rate
     mutate(gene)  
   end
-  alias pos_mutate apply_possible_muation 
+  alias apply_possible_muation with_possible_muation 
 
 
 
-  ####
-  ##Competition
-  #
-
-  def fitness_of genome
-    pheno_expresion = ""
-    unless @cache_fitness  #return fitness as norm if caching is off   
-      fitness = @fitness_function.call(genome, @current_generation, pheno_expresion)
-    else
-      @cache[genome] = @fitness_function.call(genome, @current_generation, pheno_expresion) unless @cache[genome] #update cache if value not present
-      @pheno_cache[genome] = pheno_expresion unless @pheno_cache[genome] || pheno_expresion.empty?
-      fitness = @cache[genome] #return cached value
-    end
-
-    @current_is_new_best = false
-    if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
-      @current_is_new_best = true
-      @best = {:genome => genome, :fitness => fitness}
-    end
-    fitness
+  def show_current_status
+    #known_fitness_of_pop = @population.map{|g| [g, @cache[g]]}.select{|n| !n.last.nil?}.group_by{|n| n.last}.sort_by{|n| n.first}.reverse
+    puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
   end
 
   def random

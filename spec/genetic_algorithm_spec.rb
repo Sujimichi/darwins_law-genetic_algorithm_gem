@@ -115,20 +115,20 @@ describe GeneticAlgorithm do
 
     it 'should have a default :decimal mutation function ' do 
       @ga = GeneticAlgorithm.new(:mutation_rate => 10, :gene_length => 10) #config for mutation of every gene
-      @ga.pos_mutate(4).should_not == 4
-      (@ga.pos_mutate(4) >= 3.5 && @ga.pos_mutate(4) <= 4.5).should be_true
+      @ga.with_possible_muation(4).should_not == 4
+      (@ga.with_possible_muation(4) >= 3.5 && @ga.with_possible_muation(4) <= 4.5).should be_true
     end
 
     it 'should have option for :binary mutation function ' do 
       @ga = GeneticAlgorithm.new(:mutation_rate => 10, :gene_length => 10, :mutation_function => :binary) #config for mutation of every gene
-      @ga.pos_mutate(0).should == 1
-      @ga.pos_mutate(1).should == 0
+      @ga.with_possible_muation(0).should == 1
+      @ga.with_possible_muation(1).should == 0
     end
 
     it 'should have option for :binary mutation function ' do 
       @ga = GeneticAlgorithm.new(:mutation_rate => 10, :gene_length => 10, :mutation_function => Proc.new{|gene| gene+2}) #config for mutation of every gene
-      @ga.pos_mutate(3).should == 5
-      @ga.pos_mutate(1).should == 3
+      @ga.with_possible_muation(3).should == 5
+      @ga.with_possible_muation(1).should == 3
     end
 
   end
@@ -172,12 +172,7 @@ describe GeneticAlgorithm do
       @ga = GeneticAlgorithm.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3, :mutation_function => Proc.new{|gene|
         gene + ((rand*1).round.eql?(1) ? 1 : -1)
       })
-      @ga.population.flatten.max.should <= 1
-      @ga.evolve(100)
-      @ga.population.flatten.max.should <= 4
-      @ga.evolve(500)
-      @ga.population.flatten.max.should >= 4
-
+      assert_genes_increasing_in_value
     end
   
   end

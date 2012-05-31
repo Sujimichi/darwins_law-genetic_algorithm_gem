@@ -45,7 +45,7 @@ describe DarwinianProcess do
   describe "competition" do 
     it 'should return an index to n random members with the index sorted by fitness of member first' do
       20.times do 
-        index = @darwin.sorted_random_members(2)
+        index = @darwin.select_sorted_random_members(2)
         @pop[index.first].inject{|i,j| i+j}.should >= @pop[index.last].inject{|i,j| i+j}
       end
     end
@@ -64,10 +64,7 @@ describe DarwinianProcess do
       @parent2 = [-1,-2,-3,-4,-5,-6,-7,-8,-9,-10]
       Kernel.stub!(:rand).and_return(*[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
 
-
-      @darwin.should_receive(:apply_possible_muation).and_yield().any_number_of_times
-
-
+      @darwin.should_receive(:with_possible_muation).and_yield().any_number_of_times
     end
 
     it 'should take two genomes and return a new genome' do 
@@ -129,10 +126,10 @@ describe DarwinianProcess do
       Kernel.stub!(:rand).and_return(*[0.5, 0.001])      
       @darwin.mutation_rate = 0.2
       @darwin.mutation_function = Proc.new{|gene| gene*2}
-      @darwin.apply_possible_muation{
+      @darwin.with_possible_muation{
         2+1
       }.should == 3
-      @darwin.apply_possible_muation{
+      @darwin.with_possible_muation{
         3+1
       }.should == 8
     end
@@ -147,8 +144,21 @@ describe DarwinianProcess do
   end
 
   describe "fitness evaluation" do 
-    it 'should have some tests'
+    it 'should have a default max_ones fitness function' do 
+      @darwin.fitness_of([1,1,1,1,1]).should == 5
+      @darwin.fitness_of([2,1,0,1,2]).should == 6
+    end
   end
   
+  describe "evolve" do 
+    it 'should evolve a population' do 
+      @ga = DarwinianProcess.new(:mutation_function => Proc.new{|gene|
+        gene + ((rand*1).round.eql?(1) ? 1 : -1)
+      })
+      assert_genes_increasing_in_value
+    end
+  
+  end
 
 end
+
