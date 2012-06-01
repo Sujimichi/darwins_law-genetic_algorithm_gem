@@ -227,6 +227,26 @@ describe GeneticAlgorithm::Caching do
 
 end
 
+describe GeneticAlgorithm::Standard do 
+  before(:each) do
+    @ga = GeneticAlgorithm::Standard.new
+  end
+
+  it 'should include the fitness caching module' do 
+    @ga.class.included_modules.should be_include FitnessCaching
+  end
+  
+  it 'should have ancestors' do 
+    [GeneticAlgorithm::Base, MatingRituals, DarwinianProcess].each do |ancestor|
+      @ga.class.ancestors.should be_include ancestor
+    end
+  end
+  it 'should evolve a population' do 
+    @ga = GeneticAlgorithm::Standard.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
+    assert_basic_evolution
+  end
+end
+
 describe GeneticAlgorithm::Microbial do 
  
   describe "evolving a population" do 

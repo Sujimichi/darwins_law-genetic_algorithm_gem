@@ -69,9 +69,10 @@ module Reporter
     m << "#{@current_generation}"
     
 
-    m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
-    m << "#{digest m1.join}--\\ <= #{@cache[m1].round(2)} #{genome_comment(m1,@cache[m1])}"
     mutant = @mut_count.eql?(0) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
+
+    m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
+    m << "#{digest m1.join}--\\ <= #{@cache[m1].round(2)} #{genome_comment(m1,@cache[m1])}"   
     m << "#{Array.new(32){' '}.join}   }>-#{mutant}-#{digest offspring.join}  "  
     m.last << "<= #{new_fit}" if new_fit    
     m << "#{digest m2.join}--/ <= #{@cache[m2].round(2)}"

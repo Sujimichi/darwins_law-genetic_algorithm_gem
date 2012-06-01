@@ -72,20 +72,27 @@ class GeneticAlgorithm::Caching < GeneticAlgorithm::Base
     @cache = {}
     @pheno_cache = {}  
     @cache_fitness = args[:cache_fitness] || true
-    @verbose = {:status => 100, :breeding_details => true} if args[:verbose]
   end
   
 end
 
+class GeneticAlgorithm::Standard < GeneticAlgorithm::Caching 
+  include Reporter
+  def initialize args = {}
+    super
+    @verbose = {:status => 100, :breeding_details => true} if args[:verbose]
+  end
+end
 
-class GeneticAlgorithm::Microbial < GeneticAlgorithm::Base
-  #include FitnessCaching
-  #include Reporter
+
+class GeneticAlgorithm::Microbial < GeneticAlgorithm::Caching 
+  include Reporter
 
   def initialize args = {}
     super
     @breeding_type = :microbial
     @cross_over_rate = args[:cross_over_rate] || 0.7  #Prob. of selecting gene from fitter member during recombination
+    @verbose = {:status => 100, :breeding_details => true} if args[:verbose]
   end
 end
 
