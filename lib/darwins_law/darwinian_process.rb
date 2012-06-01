@@ -1,17 +1,14 @@
 class DarwinianProcess
   include MatingRituals
-  attr_accessor :cross_over_rate, :mutation_rate, :mutation_function, :gene_length, :population
+  attr_accessor :generations, :cross_over_rate, :mutation_rate, :fitness_function, :mutation_function, :gene_length, :population, :verbose, :best, :popsize, :best
 
   def initialize args = {}
     @breeding_type = :standard
     @cross_over_rate = args[:cross_over_rate] || 0.5  #prob. of selecting gene from fitter member during recombination
-
     @current_generation = 0
     @generations = args[:generations] || 500          #Number of cycles to perform
     @gene_length = args[:gene_length] || 10           #Number of bit (genes) in a genome
     
-
-
     #define mutation rate and function
     @mutation_rate = args[:mutation_rate] || 0.1      #Per genome prob. of mutation (see readme)   
     @mutation_function = args[:mutation_function] || :decimal
@@ -21,9 +18,22 @@ class DarwinianProcess
     #define fitness function
     @fitness_function = args[:fitness_function] || args[:fitness] || Proc.new{|genome| genome.inject{|i,j| i+j} }
 
-    @population = Array.new(2){Array.new(10){rand.round}}
+    #Initialize population    
+    if args[:population]
+      @population = args[:population]
+      @popsize = @population.size
+      raise "genomes must be same size" unless @population.map{|g| g.size}.uniq.size.eql?(1)
+      @gene_length = @population.first.size
+    else
+      @popsize = args[:popsize] || 30                   #Number of members (genomes) in the population
+      args[:init_pop_with] ||= 0
+      args[:init_pop_with] = Proc.new{ (rand).round(2) } if args[:init_pop_with].eql?(:rand)
+      pop_init_func = args[:init_pop_with].is_a?(Proc) ? args[:init_pop_with] : Proc.new{ args[:init_pop_with] }
+      @population = Array.new(@popsize){ Array.new(@gene_length){ pop_init_func.call }}   
+    end
+
     @best = {:genome => [], :fitness => nil}
-    @verbose = false
+    @verbose = {:status => 100} if args[:verbose]
   end
 
   def evolve n_generations = @generations
@@ -84,7 +94,6 @@ class DarwinianProcess
     fitter, weaker = genomes
     fitter.zip(weaker).map{ |genes| with_possible_muation{ genes[ (random<@cross_over_rate ? 0 : 1) ] } }
   end
-
 
 
   ####

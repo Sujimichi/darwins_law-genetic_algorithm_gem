@@ -10,5 +10,4 @@ module DarwinsLaw
 end
 
 
-class GA < GeneticAlgorithm
-end
+

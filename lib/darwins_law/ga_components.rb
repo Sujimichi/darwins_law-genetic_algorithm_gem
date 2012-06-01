@@ -1,24 +1,4 @@
 
-module PopulationTools
-  require 'digest'
-  
-  def ordered_population
-    population.sort_by{|member| fitness(member)}.reverse
-  end
-
-  def best
-    ordered_population.first
-  end
-
-  def digest genome
-    d = Digest::MD5.new
-    d << genome
-    d.hexdigest
-  end
-
-end
-
-
 module MatingRituals
 
   def microbial_breeding
@@ -42,7 +22,8 @@ end
 
 
 module Reporter
-
+  require 'digest'
+  
   def show_current_status
     #known_fitness_of_pop = @population.map{|g| [g, @cache[g]]}.select{|n| !n.last.nil?}.group_by{|n| n.last}.sort_by{|n| n.first}.reverse
     puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
@@ -74,7 +55,21 @@ module Reporter
 
   end
 
-
+  def digest genome
+    d = Digest::MD5.new
+    d << genome
+    d.hexdigest
+  end
 end
 
+module PopulationTools
 
+  def ordered_population
+    population.sort_by{|member| fitness(member)}.reverse
+  end
+
+  def best
+    ordered_population.first
+  end
+
+end
