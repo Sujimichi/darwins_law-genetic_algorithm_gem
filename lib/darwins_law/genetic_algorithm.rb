@@ -78,6 +78,7 @@ end
 
 class GeneticAlgorithm::Standard < GeneticAlgorithm::Caching 
   include Reporter
+
   def initialize args = {}
     super
     @verbose = {:status => 100, :breeding_details => true} if args[:verbose]

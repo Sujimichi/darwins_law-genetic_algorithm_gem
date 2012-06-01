@@ -232,8 +232,9 @@ describe GeneticAlgorithm::Standard do
     @ga = GeneticAlgorithm::Standard.new
   end
 
-  it 'should include the fitness caching module' do 
+  it 'should include the fitness caching and reporter modules' do 
     @ga.class.included_modules.should be_include FitnessCaching
+    @ga.class.included_modules.should be_include Reporter
   end
   
   it 'should have ancestors' do 
