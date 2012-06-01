@@ -4,51 +4,17 @@ require 'fileutils'
 
 describe DarwinianProcess do
   before(:each) do 
-    @darwin = DarwinianProcess.new
-    @darwin.gene_length = 10    
     @pop = Array.new(10){Array.new(10){rand.round} }
-    @darwin.instance_variable_set("@population", @pop)
-    #Kernel.stub!(:rand).and_return(*[0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])    
+    @darwin = DarwinianProcess.new
+    @darwin.gene_length = 10
+    @darwin.mutation_rate = 0.1
+    @darwin.cross_over_rate = 0.5
+    @darwin.breeding_type = :standard
+    @darwin.population = @pop
+    @darwin.fitness_function = Proc.new{|genome| genome.inject{|i,j| i+j} }
+    @darwin.mutation_function = Proc.new{|gene| gene + (rand - 0.5)}
   end
 
-
-  describe "population initialization" do 
-
-    it 'should initialize population with all 0s' do 
-      @ga = DarwinianProcess.new(:gene_length => 4, :popsize => 10, :init_pop_with => 0)
-      @ga.population.should == Array.new(10){Array.new(4){0}}
-    end
-    it 'should initialize population with all 1s' do 
-      @ga = DarwinianProcess.new(:gene_length => 4, :popsize => 10, :init_pop_with => 1)
-      @ga.population.should == Array.new(10){Array.new(4){1}}
-      @ga.population.uniq.size.should == 1
-    end
-    it 'should initialize population with all rand ' do      
-      @ga = DarwinianProcess.new(:gene_length => 4, :popsize => 10, :init_pop_with => :rand)
-      @ga.population.uniq.size.should == 10
-    end
-    it 'should initialize population with all 0 by default' do      
-      @ga = DarwinianProcess.new(:gene_length => 4, :popsize => 10)
-      @ga.population.should == Array.new(10){Array.new(4){0}}
-    end
-    it 'should be initialized with custom population' do 
-      @ga = DarwinianProcess.new(:population => [[0,0,0], [0,0,0]])
-      @ga.population.should == [[0,0,0], [0,0,0]]
-      @ga.popsize.should == 2
-      @ga.gene_length.should == 3
-    end
-
-    it 'should throw error if genomes are different size' do 
-      t = false
-      begin
-      @ga = DarwinianProcess.new(:population => [[0,0,0], [0,0,0,1]])
-      rescue
-        t = true
-      end
-      t.should be_true
-    end
-
-  end
 
   describe "selection" do 
 
@@ -69,19 +35,24 @@ describe DarwinianProcess do
       }
     end
 
-
     it 'should return two members from the population by given index' do 
       selected = @darwin.select_from_population([4,8])
       selected.map{|sel| @pop.index(sel)}.should == [4,8]
     end
 
-    
-
-
-
   end
 
+
+
   describe "competition" do 
+
+    it 'should evaluate the fitness of a genome according to the fitness_function' do 
+      @darwin.fitness_function = Proc.new{|genome| genome.inject{|i,j| i+j}}
+      @darwin.fitness_of([1,1,0,1,1]).should == 4
+      @darwin.fitness_function = Proc.new{|genome| genome.inject{|i,j| i-j}}
+      @darwin.fitness_of([1,1,0,1,1]).should == -2
+    end
+
     it 'should return an index to n random members with the index sorted by fitness of member first' do
       20.times do 
         index = @darwin.select_sorted_random_members(2)
@@ -96,6 +67,9 @@ describe DarwinianProcess do
       pair.should == [[1,1,1,1,1],[1,1,1,1,0]]
     end 
   end
+
+
+
   
   describe "recombination" do 
     before(:each) do
@@ -181,68 +155,6 @@ describe DarwinianProcess do
     end
   
 
-    it 'should have a default :decimal mutation function ' do 
-      @ga = DarwinianProcess.new(:mutation_rate => 10, :gene_length => 10) #config for mutation of every gene
-      @ga.with_possible_muation(4).should_not == 4
-      (@ga.with_possible_muation(4) >= 3.5 && @ga.with_possible_muation(4) <= 4.5).should be_true
-    end
-
-    it 'should have option for :binary mutation function ' do 
-      @ga = DarwinianProcess.new(:mutation_rate => 10, :gene_length => 10, :mutation_function => :binary) #config for mutation of every gene
-      @ga.with_possible_muation(0).should == 1
-      @ga.with_possible_muation(1).should == 0
-    end
-
-    it 'should have option for :binary mutation function ' do 
-      @ga = DarwinianProcess.new(:mutation_rate => 10, :gene_length => 10, :mutation_function => Proc.new{|gene| gene+2}) #config for mutation of every gene
-      @ga.with_possible_muation(3).should == 5
-      @ga.with_possible_muation(1).should == 3
-    end
-
-  end
-  describe "fitness evaluation" do 
-    it 'should have a default max_ones fitness function' do 
-      @ga = DarwinianProcess.new
-      @ga.fitness_of([1,1,1,1,1]).should == 5
-      @ga.fitness_of([2,1,0,1,2]).should == 6
-    end
-    it 'should take a custom fitness function' do 
-      @ga = DarwinianProcess.new(:fitness => Proc.new{|genome| genome.inject{|i,j| i-j} })
-      @ga.fitness_of([1,1,1,1,1]).should == -3
-      @ga.fitness_of([1,-1,1,-1,1]).should == 1    
-    end
-    
-  end
-  
-  describe "evolve" do 
-    it 'should evolve a population' do 
-      @ga = DarwinianProcess.new(:popsize => 20, :gene_length => 5, :mutation_rate => 0.3, :mutation_function => Proc.new{|gene|
-        gene + ((rand*1).round.eql?(1) ? 1 : -1)
-      })
-      assert_genes_increasing_in_value
-    end
-  
-  end
-
-
-  describe "tracking best so far" do 
-    it 'should evolve a population' do 
-      @ga = DarwinianProcess.new(:mutation_rate => 0.1, :mutation_function => :binary)
-      @ga.population = Array.new(20){Array.new(5){rand.round}}
-      @ga.best.should be_a(Hash)
-      @ga.best[:fitness].should be_nil
-      @ga.best[:genome].should be_empty
-
-      @ga.evolve(5)
-      @ga.best[:fitness].should_not be_nil
-      @ga.best[:genome].should_not be_empty
-      best1 = @ga.best
-
-      @ga.evolve
-      @ga.best[:fitness].should == 5
-      @ga.best[:genome].should == [1,1,1,1,1]
-    end
   end
 
 end
-

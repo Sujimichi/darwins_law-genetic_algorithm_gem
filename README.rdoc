@@ -1,5 +1,9 @@
-=DawinsLaw - Simple Genetic Algorithm
-A really simple gem for using a genetic algorithm.
+=DawinsLaw - Genetic Algorithm Gem
+
+A simple gem which provides an number of genetic algorithms.
+
+  ga =
+
 
 ==Usage
 
@@ -13,15 +17,5 @@ A really simple gem for using a genetic algorithm.
     })
     ga.evolve
 
-
-
-
-==Install
-
-Add this line to your application's Gemfile:
-
-    gem 'darwins_law'
-
-Or install it yourself as:
-
-    $ gem install darwins_law
+===Whats with the name
+If your talking about complex organic evolution then the 'theory' part is still valid but in the context of selection Darwin's process is a mathematically definable, provable concept.
