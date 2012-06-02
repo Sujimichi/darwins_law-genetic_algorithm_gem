@@ -11,6 +11,5 @@ module DarwinsLaw
   end
 end
 
-
-
-
+class GA < GeneticAlgorithm
+end

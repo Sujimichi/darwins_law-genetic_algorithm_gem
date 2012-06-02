@@ -1,35 +1,38 @@
 =DawinsLaw - Genetic Algorithm Gem
 
-!!VERY MUCH UNDER CONSTRUCTION!!
+==!!VERY MUCH UNDER CONSTRUCTION!!
 
 Darwins Law is a gem to enable you to use a genetic algorithm and just focus on the behaviour/characteristics you are trying to evolve.
 
 This is still being developed and I've not quite decided on what the interface will be like, but it will be something like
 
   require 'darwins_law'
-  ga = GeneticAlgorithm.new(:gene_length => 10, :popsize => 30, :fitness => Proc.new{|genome|
+  ga = GA::Standard.new(:gene_length => 10, :popsize => 30, :fitness => Proc.new{|genome|
     #add code to evaluate genome and return fitness score (as int/float)
     genome.inject{|i,j| i + j} #for the simplest fitness func ever!
   })
   ga.evolve
 
-
-There are a number of different GA classes which will provide variations on the basic principle of evolution.
-
-GeneticAlgorithm::Base
-::Base inherits the core evolutionary logic from DarwinianProcess and provides generic initialization logic.
-
-GeneticAlgorithm::Caching
-::Caching inherits ::Base and adds a fitness caching process to reduce GA runtime.
+There are (currently) two GA classes `GeneticAlgorithm::Standard` and `GeneticAlgorithm::Microbial` which perform slightly different styles of evoltion (class GA and GeneticAlgorithm are synomous).
+Both classes inherit from GeneticAlgorithm::Base and are used (and extended) in the same way.
 
 
-GeneticAlgorithm::Standard
-GeneticAlgorithm::Microbial
-Both inherit from ::Caching and differ only in which 'breeding_type' they use and some setup values.
+All GA classes which inherit from GeneticAlgorithm::Base can be extended with extra functionality.  Currently there is only one extention; FitnessCaching, which enables the GA to track the fitness of genomes its already encountered.  The chances are the same member will be selected from the population several times, this enables only testing fitness once per genome.  In some cases this can bring the running time of the GA down by half (10th in v simplistic tests).  This is usful with length fitness evaluations and in convergent populations but will become less usful in more diverse populations (large pop, long genomes, high mutation).
 
-Both could be made from an initialized ::Base GA ie ::Microbial is like;
 
-  ga = GeneticAlgorith::Base.new(<args>)
-  ga.extend FitnessCaching
-  ga.breeding_type = :microbial
-  ga.cross_over_rate = 0.7
+  ga = GeneticAlgorithm::Standard.new(:cache_fitness => true)
+
+Or extend an already defined GA;
+
+  ga = GeneticAlgorithm::Microbial.new(:cache_fitness => true)
+  ga.evolve # taking too long, stop and...
+  ga.extend(FitnessCaching)
+  ga.evolve # ah, much better
+
+
+The other extention being bashed are a set of more detailed outputs.  currently setting :verbose => true will output the current best ever 100 generations.
+There will be a module which can extend a GA and provide more info of each generation; ie;
+
+  b2686ce250df9a96fdd1a4730a15ac97--\ <= 9.0
+                                     }>-Mutant(1)-7f485549ec3f1b8a3fcdb3397fc15381
+  ab070353eb3d8c56fe2fb5b782efbae3--/ <= 7.0
