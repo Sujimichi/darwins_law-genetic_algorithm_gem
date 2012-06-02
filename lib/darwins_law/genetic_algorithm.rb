@@ -1,7 +1,5 @@
 class GeneticAlgorithm
-   def initialize args = {}
-     self::Microbial.new(args)
-   end
+
 end
 
 class GeneticAlgorithm::Base < DarwinianProcess 
@@ -45,12 +43,13 @@ class GeneticAlgorithm::Base < DarwinianProcess
 
   def evolve n_generations = @generations
     n_generations.times do |i| 
-      single_generation
+      single_generation   #classes inheriting ::Base should override 'single_generation' with different evolutionary actions.
       show_current_status if @verbose && ((i+1)/@interval_for[:status] == (i+1)/@interval_for[:status].to_f)
       @current_generation += 1
     end
   end
 
+  #adds tracking of best genome to original logic from DarwinianProcess.
   def fitness_of genome
     fitness = super genome #lol
     @best = {:genome => genome, :fitness => fitness} if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
