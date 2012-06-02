@@ -2,7 +2,7 @@
 #This class does not actually function as a genetic algorithm, just defines the common logic.
 #GeneticAlgorithm classes will inherit this and will then add extra functionality and provide different 'recipies' for performing evolution.
 class DarwinianProcess
-  attr_accessor :cross_over_rate, :mutation_rate, :fitness_function, :mutation_function, :breeding_type
+  attr_accessor :cross_over_rate, :mutation_rate, :fitness_function, :mutation_function
   attr_accessor :generations, :gene_length, :population, :popsize
  
   ####
