@@ -1,34 +1,7 @@
 require 'spec_helper'
-require 'fileutils'
 
 
 describe GeneticAlgorithm::Base do
-
-  describe "evolving a population" do 
-
-    it 'should evolve a population' do 
-      @ga = GeneticAlgorithm::Base.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
-      assert_basic_evolution
-    end
-  
-    it 'should run evolution with custom functions' do 
-      @ga = GeneticAlgorithm::Base.new(
-        :generations => 1000, 
-        :gene_length => 4, 
-        :mutation_rate => 0.3,
-        :init_pop_with    => Proc.new{ rand*10 },
-        :fitness_function => Proc.new{|genome| 0 - (0 - genome.inject{|i,j| i + j}).abs },
-        :mutation_function=> Proc.new{|gene| gene + rand.round }
-      )
-      @ga.population.flatten.max.should > 8
-      @ga.evolve     
-      @ga.population.flatten.max.round.should_not > 3
-    end
-
-  end
-
-
-
 
   it 'should have set a number of instance variables' do 
     @ga = GeneticAlgorithm::Base.new
@@ -126,137 +99,95 @@ describe GeneticAlgorithm::Base do
     end
     
   end
- 
+
+  describe "evolving a population" do 
+
+    it 'should evolve a population' do 
+      @ga = GeneticAlgorithm::Base.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
+      assert_basic_evolution
+    end
+  
+    it 'should run evolution with custom functions' do 
+      @ga = GeneticAlgorithm::Base.new(
+        :generations => 1000, 
+        :gene_length => 4, 
+        :mutation_rate => 0.3,
+        :init_pop_with    => Proc.new{ rand*10 },
+        :fitness_function => Proc.new{|genome| 0 - (0 - genome.inject{|i,j| i + j}).abs },
+        :mutation_function=> Proc.new{|gene| gene + rand.round }
+      )
+      @ga.population.flatten.max.should > 8
+      @ga.evolve     
+      @ga.population.flatten.max.round.should_not > 3
+    end
+
+  end
+
+
+
   describe "tracking best so far" do 
     it 'should evolve a population' do 
-      @ga = GeneticAlgorithm::Base.new(:mutation_rate => 0.1, :mutation_function => :binary)
-      @ga.population = Array.new(20){Array.new(5){rand.round}}
+      @ga = GeneticAlgorithm::Base.new
       @ga.best.should be_a(Hash)
       @ga.best[:fitness].should be_nil
       @ga.best[:genome].should be_empty
 
-      @ga.evolve(5)
-      @ga.best[:fitness].should_not be_nil
-      @ga.best[:genome].should_not be_empty
-      best1 = @ga.best
-
-      @ga.evolve
-      @ga.best[:fitness].should == 5
-      @ga.best[:genome].should == [1,1,1,1,1]
-    end
-  end
-
-end
-
-
-
-
-describe GeneticAlgorithm::Caching do 
- 
-  describe "evolving a population" do 
-  
-    it 'should evolve a population' do 
-      @ga = GeneticAlgorithm::Caching.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
-      assert_basic_evolution
-    end
- 
-  end
-  
-  
-  describe "caching geneme fitness" do 
-    before(:each) do 
-      @ga = GeneticAlgorithm::Caching.new
-    end
-
-    it 'should cache a genomes fitness against a record of that genome' do
-      @ga.cache.should be_empty
-      fitness = @ga.fitness_of([1,1,1,1])
-      @ga.cache[[1,1,1,1]].should == fitness
-    end
-
-    it 'should not cache if @cache_fitness is false' do
-      @ga.cache.should be_empty
-      @ga.cache_fitness = false
-      fitness = @ga.fitness_of([1,1,1,1])
-      @ga.cache.should be_empty
-    end
-
-    it 'should return different values for different genomes' do 
-      g1 = Array.new(150){rand}
-      g2 = Array.new(150){rand}
-      f1 = @ga.fitness_of g1
-      f2 = @ga.fitness_of g2
-      
-      @ga.cache.keys.size.should == 2
-      @ga.cache[g1].should == f1
-    end
-
-    it 'should return nil when a tiny change has been made to the genome' do 
-      g1 = Array.new(150){rand}
-      f1 = @ga.fitness_of g1
-      g1[(rand*149).round] += 0.000000000001
-      @ga.cache[g1].should be_nil
-    end
-
-    it 'should continue to track best' do 
-      @ga.best[:genome].should be_empty
-      @ga.fitness_of([1,0,0,0])
-      @ga.best[:genome].should == [1,0,0,0]
-      @ga.best[:fitness].should == 1
-      @ga.fitness_of([1,0,1,1])
+      @ga.fitness_of [1,0,1,0,1]
       @ga.best[:fitness].should == 3
+      @ga.best[:genome].should == [1,0,1,0,1] 
 
+      @ga.fitness_of [1,0,0,0,1]
+      @ga.best[:fitness].should == 3
+      @ga.best[:genome].should == [1,0,1,0,1] 
+
+      @ga.fitness_of [1,0,0,1,1]  #when equally good but different genome is found, im not quite sure what to do.  currently keeping current best.
+      @ga.best[:fitness].should == 3
+      @ga.best[:genome].should == [1,0,1,0,1] 
+
+      @ga.fitness_of [1,0,1,1,1]
+      @ga.best[:fitness].should == 4
+      @ga.best[:genome].should == [1,0,1,1,1] 
+      
     end
-
-    describe "extending existing GA with Caching" do 
-      before(:each) do 
-        @ga = GeneticAlgorithm::Base.new
-        @ga.extend FitnessCaching
-      end
-
-      it 'should cache a genomes fitness against a record of that genome' do
-        @ga.cache.should be_empty
-        fitness = @ga.fitness_of([1,1,1,1])
-        @ga.cache[[1,1,1,1]].should == fitness
-      end
-
-
-    end
-
   end
 
 end
+
+
+
 
 describe GeneticAlgorithm::Standard do 
-  before(:each) do
-    @ga = GeneticAlgorithm::Standard.new
-  end
 
-  it 'should include the fitness caching and reporter modules' do 
-    @ga.class.included_modules.should be_include FitnessCaching
-    @ga.class.included_modules.should be_include Reporter
-  end
+  it 'should include the fitness caching and reporter modules' #do 
+    #GeneticAlgorithm::Standard.included_modules.should be_include FitnessCaching
+    #GeneticAlgorithm::Standard.included_modules.should be_include Reporter
+  #end
   
   it 'should have ancestors' do 
-    [GeneticAlgorithm::Base, MatingRituals, DarwinianProcess].each do |ancestor|
-      @ga.class.ancestors.should be_include ancestor
+    [GeneticAlgorithm::Base, DarwinianProcess].each do |ancestor|
+      GeneticAlgorithm::Standard.ancestors.should be_include ancestor
     end
   end
+
   it 'should evolve a population' do 
     @ga = GeneticAlgorithm::Standard.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
     assert_basic_evolution
   end
+
 end
+
+
 
 describe GeneticAlgorithm::Microbial do 
  
-  describe "evolving a population" do 
+  it 'should include the fitness caching and reporter modules' #do 
+    #GeneticAlgorithm::Standard.included_modules.should be_include FitnessCaching
+    #GeneticAlgorithm::Standard.included_modules.should be_include Reporter
+  #end
   
-    it 'should evolve a population' do 
-      @ga = GeneticAlgorithm::Microbial.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
-      assert_basic_evolution
-    end
- 
+  it 'should evolve a population' do 
+    @ga = GeneticAlgorithm::Microbial.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
+    assert_basic_evolution
   end
   
 end

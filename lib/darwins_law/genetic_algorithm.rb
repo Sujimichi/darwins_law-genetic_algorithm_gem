@@ -1,17 +1,19 @@
 class GeneticAlgorithm
+   def initialize args = {}
+     self::Microbial.new(args)
+   end
 end
 
 class GeneticAlgorithm::Base < DarwinianProcess 
-  include MatingRituals
-
   attr_accessor :verbose, :best
     
   def initialize args = {}
 
-    @breeding_type      = args[:breeding_type]      || :standard #defines what type of evolution to perform; :standard or :microbial
-    @generations        = args[:generations]        || 500       #Number of cycles to perform
-    @gene_length        = args[:gene_length]        || 10        #Number of bit (genes) in a genome
-    @popsize            = args[:popsize]            || 30        #Number of members (genomes) in the population
+    self.extend(FitnessCaching) if args[:cache_fitness]
+
+    @popsize            = args[:popsize]            || 30       #Number of members (genomes) in the population
+    @gene_length        = args[:gene_length]        || 10       #Number of bit (genes) in a genome
+    @generations        = args[:generations]        || 500      #Number of cycles to perform
 
     @cross_over_rate    = args[:cross_over_rate]    || 0.5      #prob. of selecting gene from fitter member during recombination    
     @mutation_rate      = args[:mutation_rate]      || 0.1      #Per genome prob. of mutation (see readme)   
@@ -22,8 +24,7 @@ class GeneticAlgorithm::Base < DarwinianProcess
     @fitness_function   = args[:fitness_function] || args[:fitness] || Proc.new{|genome| genome.inject{|i,j| i+j} } #define fitness function
     args[:init_pop_with]||= 0
     args[:init_pop_with]= Proc.new{ (rand).round(2) } if args[:init_pop_with].eql?(:rand)
-
-    
+   
     #Initialize population    
     if args[:population]
       @population = args[:population]
@@ -36,23 +37,18 @@ class GeneticAlgorithm::Base < DarwinianProcess
     end
 
     @best = {:genome => [], :fitness => nil}
-    @verbose = {:status => 100} if args[:verbose]
     @current_generation = 0
+
+    @verbose = args[:verbose] || false
+    @interval_for = {:status => 100}
   end
 
   def evolve n_generations = @generations
-    n_generations.times do |i|
-      self.send("#{@breeding_type}_breeding")
-      if @verbose
-        show_breeding_event(@beeding_pair, @offspring) if self.respond_to?(:show_breeding_event) && @verbose[:breeding_details]
-        show_current_status if @verbose[:status] && ((i+1)/@verbose[:status] == (i+1)/@verbose[:status].to_f)          
-      end
+    n_generations.times do |i| 
+      single_generation
+      show_current_status if @verbose && ((i+1)/@interval_for[:status] == (i+1)/@interval_for[:status].to_f)
       @current_generation += 1
     end
-  end
-
-  def show_current_status
-    puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
   end
 
   def fitness_of genome
@@ -61,40 +57,46 @@ class GeneticAlgorithm::Base < DarwinianProcess
     fitness
   end
 
+  def show_current_status
+    puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
+  end
+
 end
 
 
-class GeneticAlgorithm::Caching < GeneticAlgorithm::Base
-  include FitnessCaching
+class GeneticAlgorithm::Base
 
-  def initialize args = {}
-    super
-    @cache = {}
-    @pheno_cache = {}  
-    @cache_fitness = args[:cache_fitness] || true
-  end
+  def single_generation
+    @breeding_pair = from_population( select_random(2) )#pick two members at random from population 
+    @offspring = recombine *@breeding_pair #and produce an offspring by combining thier dna (and maybe a little mutation)      
+    contestant = from_population(contestant_index = select_random(1)) #select another random member (as contestant) and keep track of index
+    winner = [*contestant, @offspring].sort_by{|genome| fitness_of(genome)}.last #sort contestant and offspring by fitness and select winner
+    @population[*contestant_index] = winner #put the winner in the contestants place in the population    
+  end  
+
+end
+
+class GeneticAlgorithm::Standard < GeneticAlgorithm::Base 
   
 end
 
-class GeneticAlgorithm::Standard < GeneticAlgorithm::Caching 
-  include Reporter
 
-  def initialize args = {}
-    super
-    @verbose = {:status => 100, :breeding_details => true} if args[:verbose]
-  end
-end
-
-
-class GeneticAlgorithm::Microbial < GeneticAlgorithm::Caching 
-  include Reporter
+class GeneticAlgorithm::Microbial < GeneticAlgorithm::Base 
+  #include Reporter
 
   def initialize args = {}
     super
     @breeding_type = :microbial
     @cross_over_rate = args[:cross_over_rate] || 0.7  #Prob. of selecting gene from fitter member during recombination
-    @verbose = {:status => 100, :breeding_details => true} if args[:verbose]
   end
+
+  def single_generation
+    @mut_count = 0
+    #Select two members at random and sort by fitness, select.first => fitter
+    @beeding_pair = from_population( index = select_sorted_random_members(2) )
+    @offspring = recombine *@beeding_pair #Replace % of weaker member's genes with fitter member's with a posibility of mutation.
+    @population[index.last] = @offspring
+  end  
 end
 
 ##Temp stuff
