@@ -1,9 +1,9 @@
-=DawinsLaw - Genetic Algorithm Gem
+=DarwinsLaw - Genetic Algorithm Gem
 
 ==!!VERY MUCH UNDER CONSTRUCTION!!
 
 
-Darwins Law is a Genetic Algorithm gem with the aim of providing simple to use GA's that enable you to focus on the behaviour/characteristics you are trying to evolve.
+DarwinsLaw is a Genetic Algorithm gem with the aim of providing simple to use GA's that enable you to focus on the behaviour/characteristics you are trying to evolve.
 
 
   require 'darwins_law'
@@ -18,7 +18,7 @@ Both classes inherit <tt>GeneticAlgorithm::Base</tt> and are used (and extended)
 
 ===Options/Args
 
-  ga = GA::Standard.new(
+  ga = GA::Standard.new(   #or GA::Microbial
     :generations => 500,
     :gene_length => 10,
     :popsize => 30,
