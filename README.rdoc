@@ -13,11 +13,26 @@ Darwins Law is a Genetic Algorithm gem with the aim of providing simple to use G
   })
   ga.evolve
 
-There are (currently) two GA classes `GeneticAlgorithm::Standard` and `GeneticAlgorithm::Microbial` which perform slightly different styles of evolution (class GA and GeneticAlgorithm are synonymous).
-Both classes inherit from GeneticAlgorithm::Base and are used (and extended) in the same way.
+There are (currently) two GA classes <tt>GeneticAlgorithm::Standard</tt> and <tt>GeneticAlgorithm::Microbial</tt> which perform slightly different styles of evolution (class GA and GeneticAlgorithm are synonymous).
+Both classes inherit <tt>GeneticAlgorithm::Base</tt> and are used (and extended) in the same way enabling more control.
+
+===Options/Args
+
+  ga = GA::Standard.new(
+    :generations => 500,
+    :gene_length => 10,
+    :popsize => 30,
+    :mutation_rate => 0.1,
+    :cross_over_rate => 0.5
+    :init_pop_with => Proc.new{ rand*2 - 1 }, #also can be symbol :rand or an int/float
+    :mutation_function => Proc.new{|gene| gene + (rand -0.5) },
+    :fitness => Proc.new{|genome| genome.inject{|i,j| i + j} }
+    :verbose => false
+  )
 
 
-All GA classes which inherit from GeneticAlgorithm::Base can be extended with extra functionality.  Currently there is one extension; FitnessCaching, which enables the GA to track the fitness of genomes its already encountered.  The chances are the same member will be selected from the population several times, this enables only testing fitness once per genome.  In some cases this can bring the running time of the GA down by half (10th in v simplistic tests).  This is useful with lengthy fitness evaluations and in convergent populations but will become less useful in more diverse populations (large pop, long genomes, high mutation).
+===GA Extensions
+All GA classes which inherit from <tt>GeneticAlgorithm::Base</tt> can be extended with extra functionality.  Currently there is one extension; FitnessCaching, which enables the GA to track the fitness of genomes its already encountered.  The chances are the same member will be selected from the population several times, this enables only testing fitness once per genome.  In some cases this can bring the running time of the GA down by half (10th in v simplistic tests).  This is useful with lengthy fitness evaluations and in convergent populations but will become less useful in more diverse populations (large pop, long genomes, high mutation).
 
 
   ga = GeneticAlgorithm::Standard.new(:cache_fitness => true)
