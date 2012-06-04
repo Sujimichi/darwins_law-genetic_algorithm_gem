@@ -61,7 +61,6 @@ class DarwinianProcess
   
   #adjust the value of a given gene according to the Proc in @mutation_function
   def mutate gene
-    @mut_count ||= 0; @mut_count += 1 #increase the mutation count.  should be reset in the breeding process.
     @mutation_function.call(gene)
   end
 

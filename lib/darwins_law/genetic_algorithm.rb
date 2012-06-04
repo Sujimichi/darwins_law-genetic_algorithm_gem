@@ -3,11 +3,19 @@ class GeneticAlgorithm
 end
 
 class GeneticAlgorithm::Base < DarwinianProcess 
-  attr_accessor :verbose, :best
+  attr_accessor :verbose, :interval_for, :best
     
   def initialize args = {}
 
+    @verbose = args[:verbose] || false
+    @interval_for = {:status => 100}
+
     self.extend(FitnessCaching) if args[:cache_fitness]
+    if args[:show_breeding_event]
+      self.extend(EventOutput)    
+      set_interval(args)
+    end
+
 
     @popsize            = args[:popsize]            || 30       #Number of members (genomes) in the population
     @gene_length        = args[:gene_length]        || 10       #Number of bit (genes) in a genome
@@ -37,14 +45,13 @@ class GeneticAlgorithm::Base < DarwinianProcess
     @best = {:genome => [], :fitness => nil}
     @current_generation = 0
 
-    @verbose = args[:verbose] || false
-    @interval_for = {:status => 100}
+
   end
 
   def evolve n_generations = @generations
     n_generations.times do |i| 
       single_generation   #classes inheriting ::Base should override 'single_generation' with different evolutionary actions.
-      show_current_status if @verbose && ((i+1)/@interval_for[:status] == (i+1)/@interval_for[:status].to_f)
+      show_current_status if @verbose && should_show?(:status)
       @current_generation += 1
     end
   end
@@ -52,12 +59,20 @@ class GeneticAlgorithm::Base < DarwinianProcess
   #adds tracking of best genome to original logic from DarwinianProcess.
   def fitness_of genome
     fitness = super genome #lol
-    @best = {:genome => genome, :fitness => fitness} if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
+    update_best genome, fitness
     fitness
   end
 
   def show_current_status
     puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
+  end
+
+  def update_best genome, fitness
+    @best = {:genome => genome, :fitness => fitness} if @best && (@best[:fitness].nil? || fitness > @best[:fitness]  )
+  end
+
+  def should_show? output_type = :status, i = @current_generation
+    ((i+1)/@interval_for[output_type] == (i+1)/@interval_for[output_type].to_f)
   end
 
 end
@@ -81,7 +96,6 @@ end
 
 
 class GeneticAlgorithm::Microbial < GeneticAlgorithm::Base 
-  #include Reporter
 
   def initialize args = {}
     super
@@ -90,7 +104,6 @@ class GeneticAlgorithm::Microbial < GeneticAlgorithm::Base
   end
 
   def single_generation
-    @mut_count = 0
     #Select two members at random and sort by fitness, select.first => fitter
     @beeding_pair = from_population( index = select_sorted_random_members(2) )
     @offspring = recombine *@beeding_pair #Replace % of weaker member's genes with fitter member's with a posibility of mutation.

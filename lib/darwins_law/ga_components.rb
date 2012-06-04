@@ -18,22 +18,52 @@ module FitnessCaching
 
 end
 
+module EventOutput
 
-module Reporter
+  CurBestStr = "*"
+  NewBestStr = "**"
 
   def single_generation
+    @mut_count = 0
     super
-    show_breeding_event(beeding_pair, offspring) if @verbose && self.respond_to?(:show_breeding_event) && @verbose[:breeding_details]
-  end
-  
-  def show_current_status
-    #known_fitness_of_pop = @population.map{|g| [g, @cache[g]]}.select{|n| !n.last.nil?}.group_by{|n| n.last}.sort_by{|n| n.first}.reverse
-    puts "Generation: #{@current_generation}#{Array.new(8 - @current_generation.to_s.size){' '}.join} | Current Best scored: #{@best[:fitness].round(2)}"
+    show_breeding_event if @verbose && should_show?(:breeding_event)
   end
 
-  def genome_comment genome, fitness
-    "#{'*' if fitness == @best[:fitness]}#{@current_is_new_best ? 'Best so far' : ''} "
+  def mutate gene
+    @mut_count ||= 0; @mut_count += 1 #increase the mutation count.  should be reset in the breeding process.
+    super
   end
+
+  def show_breeding_event
+
+    max_p = @breeding_pair.map{|p| p.join.size }.max
+    max_p = 32 if max_p > 32
+    g1, g2 = @breeding_pair.map{|p| (max_p >= 32) ? digest(p.join) : [p, Array.new(max_p - p.join.size){' '}].join }
+    f1, f2 = @breeding_pair.map{|p| @cache[p] } if @cache
+    offspring  = (@offspring.join.size >= 32 ) ? digest(@offspring.join) : @offspring.join
+    new_fit = @cache[@offspring] if @cache 
+    mutant = (@mut_count && @mut_count.eql?(0)) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
+
+
+    m = []
+    m << "#{g1}--\\#{genome_comment(@breeding_pair[0],f1)}"
+    m << "#{Array.new(max_p){' '}.join}   }>-#{mutant}-#{offspring}#{genome_comment(@offspring,new_fit)}"
+    m << "#{g2}--/#{genome_comment(@breeding_pair[1],f2)}"
+    m << "\n\n"
+
+    #m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
+
+    puts m
+  end
+
+
+  def genome_comment genome, fitness
+    s = ""
+    s << "#{fitness.round(2)}" if fitness
+    s << "#{CurBestStr}" if genome == @best[:genome]
+    s = " <= #{s}" unless s.empty?
+    s
+  end  
 
   def digest genome
     d = Digest::MD5.new
@@ -41,26 +71,17 @@ module Reporter
     d.hexdigest
   end  
 
-
-
-  def show_breeding_event mates, offspring    
-    m1,m2 = mates
-    new_fit = @cache[offspring].round(2) if @cache[offspring]
-
-    m = []
-    m << "#{@current_generation}"
-  
-    mutant = @mut_count.eql?(0) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
-
-    m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
-    m << "#{digest m1.join}--\\ <= #{@cache[m1].round(2)} #{genome_comment(m1,@cache[m1])}"   
-    m << "#{Array.new(32){' '}.join}   }>-#{mutant}-#{digest offspring.join}  "  
-    m.last << "<= #{new_fit}" if new_fit    
-    m << "#{digest m2.join}--/ <= #{@cache[m2].round(2)}"
-    m << "#{@pheno_cache[m2]}" if @pheno_cache[m2]
-    m << "\n\n"
-
-    puts m
+  #called in GeneticAlgorithm::Base if it is initialized with the :show_breeding_event arg
+  def set_interval args
+    if args[:show_breeding_event].eql?(true) || args[:show_breeding_event].eql?(:each_time)
+      @interval_for[:breeding_event] = 1 
+    elsif args[:show_breeding_event].to_s.include?("every")  
+      @interval_for[:breeding_event] = args[:show_breeding_event].to_s.sub("every_","").to_i 
+    elsif args[:show_breeding_event].eql?(:with_best)
+      @interval_for[:breeding_event] = :with_best
+    else
+      @interval_for[:breeding_event] = nil
+    end
   end
 
 

@@ -1,8 +1,11 @@
 module DarwinsLaw
-  VERSION = "0.0.3"
+  VERSION = "0.0.4"
 end
 
 #Version History
+#0.0.4
+#Adding More detailed output
+#
 #0.0.3
 #further separation of functionality
 #introduction of different GA classes with different functionality

@@ -9,7 +9,6 @@ describe DarwinianProcess do
     @darwin.gene_length = 10
     @darwin.mutation_rate = 0.1
     @darwin.cross_over_rate = 0.5
-    @darwin.breeding_type = :standard
     @darwin.population = @pop
     @darwin.fitness_function = Proc.new{|genome| genome.inject{|i,j| i+j} }
     @darwin.mutation_function = Proc.new{|gene| gene + (rand - 0.5)}

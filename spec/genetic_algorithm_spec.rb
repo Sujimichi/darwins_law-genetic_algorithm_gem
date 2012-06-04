@@ -94,15 +94,13 @@ describe GeneticAlgorithm::Base do
       @ga.fitness_of([1,1,1,1,1]).should == 1
       @ga.fitness_of([1,-1,1,-1,1]).should == 1    
       @ga.fitness_of([1,2,3,4,5]).should == 120
-
-
     end
     
   end
 
   describe "evolving a population" do 
 
-    it 'should evolve a population' do 
+    it 'should change the population' do 
       @ga = GeneticAlgorithm::Base.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
       assert_basic_evolution
     end
@@ -151,6 +149,10 @@ describe GeneticAlgorithm::Base do
     end
   end
 
+  describe "output of current best every n generations" do 
+    it 'should have some tests'
+  end
+
 end
 
 
@@ -169,7 +171,7 @@ describe GeneticAlgorithm::Standard do
     end
   end
 
-  it 'should evolve a population' do 
+  it 'should change the population' do 
     @ga = GeneticAlgorithm::Standard.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
     assert_basic_evolution
   end
@@ -185,7 +187,13 @@ describe GeneticAlgorithm::Microbial do
     #GeneticAlgorithm::Standard.included_modules.should be_include Reporter
   #end
   
-  it 'should evolve a population' do 
+  it 'should have ancestors' do 
+    [GeneticAlgorithm::Base, DarwinianProcess].each do |ancestor|
+      GeneticAlgorithm::Standard.ancestors.should be_include ancestor
+    end
+  end
+
+  it 'should change the population' do 
     @ga = GeneticAlgorithm::Microbial.new(:popsize => 20, :gene_length => 5, :init_pop_with => :rand, :mutation_rate => 0.3)
     assert_basic_evolution
   end

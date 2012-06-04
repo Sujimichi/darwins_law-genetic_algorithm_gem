@@ -3,8 +3,6 @@ require 'spec_helper'
 describe FitnessCaching do 
 
   describe "extending GeneticAlgorithm::Base with FitnessCaching" do 
-    before(:each) do 
-    end
 
     it 'should cache a genomes fitness against a record of that genome' do
       @ga = GeneticAlgorithm::Base.new
