@@ -4,12 +4,13 @@ module FitnessCaching
   def fitness_of genome
     @cache_fitness = true unless defined? @cache_fitness
     return super unless @cache_fitness  #return fitness as norm if caching is off   
-    unless cache[genome] #update cache if value not present
-      cache[genome] = super #call fitness_of in superclass to get fitness evaluated
-      #@pheno_cache[genome] = @info[:pheno_type] if @info && @info[:pheno_type]
-    end
+    update_cache_for(genome, super) unless cache[genome] #update cache if value not present. call fitness_of in superclass to get fitness evaluated
     @cache[genome] #return cached value
   end  
+
+  def update_cache_for genome, fitness
+    @cache[genome] = fitness
+  end
 
   def cache
     @cache = {} unless defined? @cache
@@ -19,6 +20,8 @@ module FitnessCaching
 end
 
 module EventOutput
+  attr_accessor :phenotype_for
+
   CurBestStr = "*"
   NewBestStr = "**"
 
@@ -29,15 +32,14 @@ module EventOutput
   end
 
   def mutate gene
-    @mut_count ||= 0; @mut_count += 1 #increase the mutation count.  should be reset in the breeding process.
+    @mut_count ||= 0; @mut_count += 1 #increase the mutation count.  should be reset for each generation.
     super
   end
 
-  def fitness_of genome
-    fitness = super
+  def update_cache_for genome, fitness
+    super
     @phenotype_for = {} unless defined? @phenotype_for
-    @phenotype_for[genome] = @fitness_evaluation_data[:phenotype]
-    fitness
+    @phenotype_for[genome] = @fitness_data[:phenotype] unless @fitness_data[:phenotype].nil? || @fitness_data[:phenotype].empty?
   end
 
   def show_breeding_event
@@ -49,6 +51,7 @@ module EventOutput
     new_fit = @cache[@offspring] if @cache 
     mutant = (@mut_count && @mut_count.eql?(0)) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
     @phenotype_for = {} unless defined? @phenotype_for
+
 
     m = []
     m << "#{@phenotype_for[@breeding_pair[0]]}" if @phenotype_for[@breeding_pair[0]]

@@ -75,7 +75,7 @@ describe FitnessCaching do
     #with init_pop_with => :rand should be about twice as fast over first few gens.
     #with init_pop_with => 0 (pop are all clones to start) it is about 9-10 times faster.
     it 'GA should run faster with caching than without' do 
-      @ga_n = GeneticAlgorithm::Base.new(:init_pop_with => :rand, :generations => 100, :fitness => Proc.new{|g| 
+      @ga_n = GeneticAlgorithm::Base.new(:init_pop_with => 0, :generations => 100, :fitness => Proc.new{|g| 
         sleep(0.05)
         g.inject{|i,j| i+j }
       })
@@ -85,8 +85,7 @@ describe FitnessCaching do
       time_without_cache = Timer.time_code { @ga_n.evolve }
       time_with_cache = Timer.time_code {    @ga_c.evolve }       
       #puts [time_without_cache, time_with_cache].inspect
-      time_with_cache.should < time_without_cache
-      
+      time_with_cache.should < (time_without_cache/2)
     end
 
   end

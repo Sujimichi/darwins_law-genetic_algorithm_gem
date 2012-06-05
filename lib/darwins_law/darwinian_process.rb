@@ -27,8 +27,8 @@ class DarwinianProcess
 
   #return the fitness of a genome based on the @fitness_function.
   def fitness_of genome 
-    @fitness_evaluation_data ||= {}
-    @fitness_function.call(genome, @fitness_evaluation_data)
+    @fitness_data = {}
+    @fitness_function.call(genome, @fitness_data)
   end
   
   ##Select and Compete

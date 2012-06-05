@@ -289,15 +289,21 @@ describe EventOutput do
 
   describe "showing phentype output" do 
     before(:each) do 
-      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true, :fitness => Proc.new{|genome, data|
-        data[:phenotype] = "custom_pheno-"
-        data[:phenotype] << (genome.include?(1) ? 'smellsofone' : 'nothing here')
-        genome.inject{|i,j| i+j}
-      })
-      @ga.extend FitnessCaching
+      @ga = GeneticAlgorithm::Base.new(
+        :show_breeding_event => true, 
+        :verbose => true, 
+        :mutation_function => :binary, 
+        :cache_fitness => true,
+        :fitness => Proc.new{|genome, data|
+          data[:phenotype] = "custom_pheno-"
+          data[:phenotype] << (genome.include?(1) ? 'smellsofone' : 'nothing here')
+          genome.inject{|i,j| i+j}
+        }
+      )
+      #@ga.extend FitnessCaching
     end
 
-    it 'should mark current best on parent 1' do
+    it 'should show the string :phenotype in the output' do
       @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
       @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
       @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,1,1,1,1,1], :fitness => 10})
@@ -311,6 +317,32 @@ describe EventOutput do
         "\n\n"
       ]) 
       @ga.single_generation
+
+      @ga.stub!(:from_population => [[0,0,0,0,0,0,0,0,0,0],[1,1,1,1,1,0,0,0,0,0]])
+      @ga.should_receive(:puts).with([
+        "custom_pheno-nothing here",                                     
+        "0000000000--\\ <= 0.0", 
+        "             }>----------0101000000 <= 2.0", 
+        "1111100000--/ <= 5.0",
+        "custom_pheno-smellsofone",
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    
+    
+    end
+
+    it 'should create an accurate phentype to genome mapping' do 
+      @ga.stub!(:puts => true) #mask output 
+      @ga.fitness_function = Proc.new{|genome, data|
+        data[:phenotype] = genome.join
+        genome.inject{|i,j| i+j}
+      }
+      @ga.evolve
+      @ga.phenotype_for.should_not be_empty
+      @ga.phenotype_for.map{|k,v| 
+        v.should == k.join
+      }
     end
 
   end

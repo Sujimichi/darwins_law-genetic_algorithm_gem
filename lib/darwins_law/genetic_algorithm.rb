@@ -10,12 +10,11 @@ class GeneticAlgorithm::Base < DarwinianProcess
     @verbose = args[:verbose] || false
     @interval_for = {:status => 100}
 
-    self.extend(FitnessCaching) if args[:cache_fitness]
+    self.extend(FitnessCaching) if args[:cache_fitness]   
     if args[:show_breeding_event]
       self.extend(EventOutput)    
       set_interval(args)
     end
-
 
     @popsize            = args[:popsize]            || 30       #Number of members (genomes) in the population
     @gene_length        = args[:gene_length]        || 10       #Number of bit (genes) in a genome
