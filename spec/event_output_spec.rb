@@ -99,195 +99,220 @@ describe EventOutput do
       @ga.single_generation
     end
 
+  end
+  describe "counting mutations" do 
+    before(:each) do 
+      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
+      @ga.instance_variable_set("@best", {:genome => [0,0,0,0,0,0,1,1,0,0], :fitness => 12})#not a real fitness, just stops being marked as best as this is not what is being tested here.
+    end
 
-    describe "counting mutations" do 
-      before(:each) do 
-        @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
-        @ga.instance_variable_set("@best", {:genome => [0,0,0,0,0,0,1,1,0,0], :fitness => 12})#not a real fitness, just stops being marked as best as this is not what is being tested here.
-      end
+    it 'should count the number of mutations which occured' do
+      @ga.instance_variable_get("@mut_count").should be_nil
+      @ga.should_receive(:puts).exactly(3).times.and_return(nil) #just to mask output being shown in testrun.
 
-      it 'should count the number of mutations which occured' do
-        @ga.instance_variable_get("@mut_count").should be_nil
-        @ga.should_receive(:puts).exactly(3).times.and_return(nil) #just to mask output being shown in testrun.
+      Kernel.stub!(:rand).and_return(1)
+      @ga.single_generation
+      @ga.instance_variable_get("@mut_count").should == 0
 
-        Kernel.stub!(:rand).and_return(1)
-        @ga.single_generation
-        @ga.instance_variable_get("@mut_count").should == 0
+      Kernel.stub!(:rand).and_return(*[1,1,1,0,1])
+      @ga.single_generation
+      @ga.instance_variable_get("@mut_count").should == 1
 
-        Kernel.stub!(:rand).and_return(*[1,1,1,0,1])
-        @ga.single_generation
-        @ga.instance_variable_get("@mut_count").should == 1
+      Kernel.stub!(:rand).and_return(1)
+      @ga.single_generation
+      @ga.instance_variable_get("@mut_count").should == 0
+  
+    end
+    
+    it 'should show number of mutations' do 
+      @ga.stub!(:from_population => [[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0]])
+      #@ga.stub!(:recombine => [0,1,0,1,0,1,0,1,0,1])
+      @ga.instance_variable_set("@mut_count", 2)
+      @ga.mutation_function = Proc.new{|g| g}
 
-        Kernel.stub!(:rand).and_return(1)
-        @ga.single_generation
-        @ga.instance_variable_get("@mut_count").should == 0
-   
-      end
+      Kernel.stub!(:rand).and_return(*[1,1,1,0,1,0,1,1,0,1,0,1])
+    
+      @ga.should_receive(:puts).with([
+        "1111111111--\\",
+        "             }>-Mutant(2)-0000110000", 
+        "0000000000--/", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    end
+
+  end
+
+  describe "showing fitness values when cache is present" do 
+    before(:each) do 
+      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
+      @ga.extend(FitnessCaching)
+      @ga.stub!(:fitness_of) #stops real caching getting in the way of stubbed cache values
+      @ga.stub!(:from_population => [[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,1,0,1,0,1])
+
+      @ga.instance_variable_set("@best", {:genome => [0,0,0,0,0,0,1,1,0,0], :fitness => 12})#not a real fitness, just stops being marked as best as this is not what is being tested here.
       
-      it 'should show number of mutations' do 
-        @ga.stub!(:from_population => [[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0]])
-        #@ga.stub!(:recombine => [0,1,0,1,0,1,0,1,0,1])
-        @ga.instance_variable_set("@mut_count", 2)
-        @ga.mutation_function = Proc.new{|g| g}
-
-        Kernel.stub!(:rand).and_return(*[1,1,1,0,1,0,1,1,0,1,0,1])
+    end
+    
+    it 'should show fitness of parents' do 
+      @ga.instance_variable_set("@cache", {[1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0})
       
-        @ga.should_receive(:puts).with([
-          "1111111111--\\",
-          "             }>-Mutant(2)-0000110000", 
-          "0000000000--/", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
+      @ga.should_receive(:puts).with([
+        "1111111111--\\ <= 10.0",
+        "             }>----------0101010101", 
+        "0000000000--/ <= 0.0", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
     end
 
-    describe "showing fitness values when cache is present" do 
-      before(:each) do 
-        @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
-        @ga.extend(FitnessCaching)
-        @ga.stub!(:fitness_of) #stops real caching getting in the way of stubbed cache values
-        @ga.stub!(:from_population => [[1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,0,0,0,0]])
-        @ga.stub!(:recombine => [0,1,0,1,0,1,0,1,0,1])
-
-        @ga.instance_variable_set("@best", {:genome => [0,0,0,0,0,0,1,1,0,0], :fitness => 12})#not a real fitness, just stops being marked as best as this is not what is being tested here.
-        
-      end
+    it 'should show fitness of parents and offspring if offspirng has already been encouterd' do 
+      @ga.instance_variable_set("@cache", {[1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0, [0,1,0,1,0,1,0,1,0,1] => 5})
       
-      it 'should show fitness of parents' do 
-        @ga.instance_variable_set("@cache", {[1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0})
-        
-        @ga.should_receive(:puts).with([
-          "1111111111--\\ <= 10.0",
-          "             }>----------0101010101", 
-          "0000000000--/ <= 0.0", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
-      it 'should show fitness of parents and offspring if offspirng has already been encouterd' do 
-        @ga.instance_variable_set("@cache", {[1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0, [0,1,0,1,0,1,0,1,0,1] => 5})
-        
-        @ga.should_receive(:puts).with([
-          "1111111111--\\ <= 10.0",
-          "             }>----------0101010101 <= 5.0", 
-          "0000000000--/ <= 0.0", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
+      @ga.should_receive(:puts).with([
+        "1111111111--\\ <= 10.0",
+        "             }>----------0101010101 <= 5.0", 
+        "0000000000--/ <= 0.0", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
     end
 
+  end
 
-    describe "marking current best (without cached fitness values)" do 
-      before(:each) do 
-        @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
-      end
 
-      it 'should mark current best on parent 1' do
-        @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
-        @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
-
-        @ga.should_receive(:puts).with([
-          "1111100000--\\ <= #{@curbest}",
-          "             }>----------0101000000", 
-          "0000000000--/", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
-      it 'should mark current best on parent 2' do
-        @ga.stub!(:from_population => [[0,0,0,0,0,0,0,0,0,0], [1,1,1,1,1,0,0,0,0,0]])
-        @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
-
-        @ga.should_receive(:puts).with([
-          "0000000000--\\",
-          "             }>----------0101000000", 
-          "1111100000--/ <= #{@curbest}", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
-      it 'should show best so far on offspring' do 
-        @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
-        @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
-        @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,1,1,1,1,1]])
-        @ga.mutation_function = Proc.new{|g| (g-1).abs }
-        Kernel.stub!(:rand).and_return(*[0])
-        Kernel.stub!(:rand).and_return(*[0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1])
-
-        @ga.should_receive(:puts).with([
-          "1111100000--\\",
-          "             }>----------1111111111 <= *", 
-          "0000011111--/", 
-          "\n\n"
-        ])
-        @ga.single_generation
-      end      
-
+  describe "marking current best (without cached fitness values)" do 
+    before(:each) do 
+      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
     end
 
+    it 'should mark current best on parent 1' do
+      @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
 
-    describe "marking current best (with cached fitness values)" do 
-      before(:each) do 
-        @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
-        @ga.extend FitnessCaching
-        @ga.stub!(:fitness_of) #stops real caching getting in the way of stubbed cache values
-        @ga.instance_variable_set("@cache", {[1,1,1,1,1,0,0,0,0,0] => 5, [1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0})
-      end
-
-      it 'should mark current best on parent 1' do
-        @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
-        @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
-        @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,0,0,0,0,0], :fitness => 5})      
-
-        @ga.should_receive(:puts).with([
-          "1111100000--\\ <= 5.0#{@curbest}",
-          "             }>----------0101000000", 
-          "0000000000--/ <= 0.0", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
-      it 'should mark current best on parent 2' do
-        @ga.stub!(:from_population => [[0,0,0,0,0,0,0,0,0,0], [1,1,1,1,1,0,0,0,0,0]])
-        @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
-        @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,0,0,0,0,0], :fitness => 5})      
-
-        @ga.should_receive(:puts).with([
-          "0000000000--\\ <= 0.0",
-          "             }>----------0101000000", 
-          "1111100000--/ <= 5.0#{@curbest}", 
-          "\n\n"
-        ]) 
-        @ga.single_generation
-      end
-
-      it 'should show best so far on offspring' do 
-        @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
-        @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
-        @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,1,1,1,1,1]])
-        @ga.mutation_function = Proc.new{|g| (g-1).abs }
-        @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,1,1,1,1,1], :fitness => 10})
-        Kernel.stub!(:rand).and_return(*[0])
-        Kernel.stub!(:rand).and_return(*[0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1])
-
-        @ga.should_receive(:puts).with([
-          "1111100000--\\ <= 5.0",
-          "             }>----------1111111111 <= 10.0*", 
-          "0000011111--/", 
-          "\n\n"
-        ])
-        @ga.single_generation
-      end      
-
+      @ga.should_receive(:puts).with([
+        "1111100000--\\ <= #{@curbest}",
+        "             }>----------0101000000", 
+        "0000000000--/", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
     end
+
+    it 'should mark current best on parent 2' do
+      @ga.stub!(:from_population => [[0,0,0,0,0,0,0,0,0,0], [1,1,1,1,1,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
+
+      @ga.should_receive(:puts).with([
+        "0000000000--\\",
+        "             }>----------0101000000", 
+        "1111100000--/ <= #{@curbest}", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    end
+
+    it 'should show best so far on offspring' do 
+      @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
+      @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
+      @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,1,1,1,1,1]])
+      @ga.mutation_function = Proc.new{|g| (g-1).abs }
+      Kernel.stub!(:rand).and_return(*[0])
+      Kernel.stub!(:rand).and_return(*[0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1])
+
+      @ga.should_receive(:puts).with([
+        "1111100000--\\",
+        "             }>----------1111111111 <= *", 
+        "0000011111--/", 
+        "\n\n"
+      ])
+      @ga.single_generation
+    end      
+  end
+
+  describe "marking current best (with cached fitness values)" do 
+    before(:each) do 
+      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true)
+      @ga.extend FitnessCaching
+      @ga.stub!(:fitness_of) #stops real caching getting in the way of stubbed cache values
+      @ga.instance_variable_set("@cache", {[1,1,1,1,1,0,0,0,0,0] => 5, [1,1,1,1,1,1,1,1,1,1] => 10, [0,0,0,0,0,0,0,0,0,0] => 0})
+    end
+
+    it 'should mark current best on parent 1' do
+      @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
+      @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,0,0,0,0,0], :fitness => 5})      
+
+      @ga.should_receive(:puts).with([
+        "1111100000--\\ <= 5.0#{@curbest}",
+        "             }>----------0101000000", 
+        "0000000000--/ <= 0.0", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    end
+
+    it 'should mark current best on parent 2' do
+      @ga.stub!(:from_population => [[0,0,0,0,0,0,0,0,0,0], [1,1,1,1,1,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
+      @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,0,0,0,0,0], :fitness => 5})      
+
+      @ga.should_receive(:puts).with([
+        "0000000000--\\ <= 0.0",
+        "             }>----------0101000000", 
+        "1111100000--/ <= 5.0#{@curbest}", 
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    end
+
+    it 'should show best so far on offspring' do 
+      @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
+      @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,1,1,1,1,1]])
+      @ga.should_receive(:from_population).ordered.and_return([[1,1,1,1,1,1,1,1,1,1]])
+      @ga.mutation_function = Proc.new{|g| (g-1).abs }
+      @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,1,1,1,1,1], :fitness => 10})
+      Kernel.stub!(:rand).and_return(*[0])
+      Kernel.stub!(:rand).and_return(*[0,1,0,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1])
+
+      @ga.should_receive(:puts).with([
+        "1111100000--\\ <= 5.0",
+        "             }>----------1111111111 <= 10.0*", 
+        "0000011111--/", 
+        "\n\n"
+      ])
+      @ga.single_generation
+    end      
+
+  end
+
+  describe "showing phentype output" do 
+    before(:each) do 
+      @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true, :verbose => true, :fitness => Proc.new{|genome, data|
+        data[:phenotype] = "custom_pheno-"
+        data[:phenotype] << (genome.include?(1) ? 'smellsofone' : 'nothing here')
+        genome.inject{|i,j| i+j}
+      })
+      @ga.extend FitnessCaching
+    end
+
+    it 'should mark current best on parent 1' do
+      @ga.stub!(:from_population => [[1,1,1,1,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]])
+      @ga.stub!(:recombine => [0,1,0,1,0,0,0,0,0,0])
+      @ga.instance_variable_set("@best", {:genome => [1,1,1,1,1,1,1,1,1,1], :fitness => 10})
+
+      @ga.should_receive(:puts).with([
+        "custom_pheno-smellsofone",
+        "1111100000--\\ <= 5.0",
+        "             }>----------0101000000 <= 2.0", 
+        "0000000000--/ <= 0.0", 
+        "custom_pheno-nothing here",
+        "\n\n"
+      ]) 
+      @ga.single_generation
+    end
+
   end
 
 end

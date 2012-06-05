@@ -33,6 +33,13 @@ module EventOutput
     super
   end
 
+  def fitness_of genome
+    fitness = super
+    @phenotype_for = {} unless defined? @phenotype_for
+    @phenotype_for[genome] = @fitness_evaluation_data[:phenotype]
+    fitness
+  end
+
   def show_breeding_event
     max_p = @breeding_pair.map{|p| p.join.size }.max
     max_p = 32 if max_p > 32
@@ -41,13 +48,16 @@ module EventOutput
     offspring  = (@offspring.join.size >= 32 ) ? digest(@offspring.join) : @offspring.join
     new_fit = @cache[@offspring] if @cache 
     mutant = (@mut_count && @mut_count.eql?(0)) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
+    @phenotype_for = {} unless defined? @phenotype_for
 
     m = []
+    m << "#{@phenotype_for[@breeding_pair[0]]}" if @phenotype_for[@breeding_pair[0]]
     m << "#{g1}--\\#{genome_comment(@breeding_pair[0],f1)}"
     m << "#{Array.new(max_p){' '}.join}   }>-#{mutant}-#{offspring}#{genome_comment(@offspring,new_fit)}"
     m << "#{g2}--/#{genome_comment(@breeding_pair[1],f2)}"
+    m << "#{@phenotype_for[@breeding_pair[1]]}" if @phenotype_for[@breeding_pair[1]]
     m << "\n\n"
-    #m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
+    
     puts m
   end
 
