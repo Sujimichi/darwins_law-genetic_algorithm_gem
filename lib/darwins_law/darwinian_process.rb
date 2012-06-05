@@ -80,4 +80,5 @@ class DarwinianProcess
   def random
     Kernel.rand
   end
+
 end

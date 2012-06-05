@@ -19,7 +19,6 @@ module FitnessCaching
 end
 
 module EventOutput
-
   CurBestStr = "*"
   NewBestStr = "**"
 
@@ -35,7 +34,6 @@ module EventOutput
   end
 
   def show_breeding_event
-
     max_p = @breeding_pair.map{|p| p.join.size }.max
     max_p = 32 if max_p > 32
     g1, g2 = @breeding_pair.map{|p| (max_p >= 32) ? digest(p.join) : [p, Array.new(max_p - p.join.size){' '}].join }
@@ -44,15 +42,12 @@ module EventOutput
     new_fit = @cache[@offspring] if @cache 
     mutant = (@mut_count && @mut_count.eql?(0)) ? Array.new(8){'-'}.join : "Mutant(#{@mut_count})"
 
-
     m = []
     m << "#{g1}--\\#{genome_comment(@breeding_pair[0],f1)}"
     m << "#{Array.new(max_p){' '}.join}   }>-#{mutant}-#{offspring}#{genome_comment(@offspring,new_fit)}"
     m << "#{g2}--/#{genome_comment(@breeding_pair[1],f2)}"
     m << "\n\n"
-
     #m << "#{@pheno_cache[m1]}" if @pheno_cache[m1]
-
     puts m
   end
 

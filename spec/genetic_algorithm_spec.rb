@@ -153,6 +153,8 @@ describe GeneticAlgorithm::Base do
     it 'should have some tests'
   end
 
+  
+
 end
 
 

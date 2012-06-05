@@ -99,13 +99,11 @@ class GeneticAlgorithm::Microbial < GeneticAlgorithm::Base
 
   def initialize args = {}
     super
-    @breeding_type = :microbial
     @cross_over_rate = args[:cross_over_rate] || 0.7  #Prob. of selecting gene from fitter member during recombination
   end
 
   def single_generation
-    #Select two members at random and sort by fitness, select.first => fitter
-    @beeding_pair = from_population( index = select_sorted_random_members(2) )
+    @beeding_pair = from_population( index = select_sorted_random_members(2) ) #Select two members at random and sort by fitness, select.first => fitter
     @offspring = recombine *@beeding_pair #Replace % of weaker member's genes with fitter member's with a posibility of mutation.
     @population[index.last] = @offspring
   end  
