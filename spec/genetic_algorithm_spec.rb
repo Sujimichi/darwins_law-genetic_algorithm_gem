@@ -1,5 +1,11 @@
 require 'spec_helper'
 
+def test_config conf, should_contain
+  should_contain.each do |k,v|
+    conf.should have_key(k)
+    conf[k].should == v unless v.eql?("whatever")
+  end
+end
 
 describe GeneticAlgorithm::Base do
 
@@ -10,6 +16,105 @@ describe GeneticAlgorithm::Base do
     vars.map{|v| i_vars.should be_include(v)}      
   end
 
+
+  describe "config" do 
+    it 'should return the default config args when none are given in init' do 
+      @ga = GeneticAlgorithm::Base.new
+      @ga.config.should be_a Hash
+      conf = @ga.config
+      test_config conf, {:verbose => false, :interval_for => {:status => 100}}
+    end
+
+    it 'should return user settings when given and defaults for non specified' do 
+      @ga = GeneticAlgorithm::Base.new(:verbose => true)
+      conf = @ga.config
+      test_config conf, {:verbose => true, :interval_for => {:status => 100}}
+    end
+
+    it 'should allow method access to config keys' do 
+      @ga = GeneticAlgorithm::Base.new(:verbose => true)
+      @ga.verbose.should == true
+    end
+
+    describe "being automatically extended by extending ::Base with certain modules" do 
+      before(:each) do 
+        @ga = GeneticAlgorithm::Base.new
+      end
+      describe "FitnessCaching module" do 
+
+        it 'should extend the config with with defaults when none are present' do 
+          @ga.config.should_not have_key :cache_fitness
+          @ga.extend FitnessCaching
+          @ga.config.should have_key :cache_fitness
+          @ga.config[:cache_fitness].should be_true
+        end
+
+        it 'should extend the config but not replace present values with defaults' do         
+          @ga = GeneticAlgorithm::Base.new(:cache_fitness => false)
+          @ga.config.should have_key :cache_fitness
+          @ga.config[:cache_fitness].should be_false
+          @ga.extend FitnessCaching
+          @ga.config[:cache_fitness].should be_false      
+        end
+      end
+
+      describe "ConvergenceMonitor" do 
+
+        it 'should extend the config with with defaults when none are present' do 
+          @ga.config[:interval_for].should_not have_key :record_convergence
+          @ga.config[:interval_for].should_not have_key :current_convergance
+          @ga.extend ConvergenceMonitor
+          @ga.config[:interval_for].should have_key :record_convergence
+          @ga.config[:interval_for].should have_key :current_convergence
+          #@ga.config[:current_convergance].should == :as_percent_bar
+        end
+
+
+      end
+
+      describe "EventOutput module" do 
+
+        it 'should extend the config with with defaults when none are present' do 
+          @ga.config.should_not have_key :show_breeding_event
+          @ga.extend EventOutput
+          @ga.config.should have_key :show_breeding_event
+          @ga.config[:show_breeding_event].should be_true
+        end
+
+        it 'should extend the config for interval_for with breeding_event' do 
+          @ga.config[:interval_for].should_not have_key(:breeding_event)
+          @ga.extend EventOutput
+          @ga.config[:interval_for].should have_key(:breeding_event)
+        end
+
+        it 'should set breeding_event to 1 when show_breeding_event is true' do 
+          @ga = GeneticAlgorithm::Base.new(:show_breeding_event => true)
+          @ga.config[:interval_for][:breeding_event].should == 1
+        end
+
+        it 'should set breeding_event to n when show_breeding_event is every_n' do
+          @ga = GeneticAlgorithm::Base.new(:show_breeding_event => :every_20)
+          @ga.config[:interval_for][:breeding_event].should == 20
+          @ga = GeneticAlgorithm::Base.new(:show_breeding_event => :every_100)
+          @ga.config[:interval_for][:breeding_event].should == 100          
+        end
+
+        it 'should set breeding_event to :with_best when show_breeding_event is with_best' do
+          @ga = GeneticAlgorithm::Base.new(:show_breeding_event => :with_best)
+          @ga.config[:interval_for][:breeding_event].should == :with_best          
+        end
+
+        it 'should not overwrite custom seting for breeding_event' do 
+          @ga = GeneticAlgorithm::Base.new(:show_breeding_event => :every_20)
+          @ga.config[:interval_for][:breeding_event].should == 20
+          @ga.config[:show_breeding_event] = :every_42
+          @ga.config[:interval_for][:breeding_event].should == 42
+        end
+
+      end
+
+    end
+  end
 
   describe "population initialization" do 
 
@@ -162,11 +267,6 @@ end
 
 describe GeneticAlgorithm::Standard do 
 
-  it 'should include the fitness caching and reporter modules' #do 
-    #GeneticAlgorithm::Standard.included_modules.should be_include FitnessCaching
-    #GeneticAlgorithm::Standard.included_modules.should be_include Reporter
-  #end
-  
   it 'should have ancestors' do 
     [GeneticAlgorithm::Base, DarwinianProcess].each do |ancestor|
       GeneticAlgorithm::Standard.ancestors.should be_include ancestor
@@ -184,11 +284,6 @@ end
 
 describe GeneticAlgorithm::Microbial do 
  
-  it 'should include the fitness caching and reporter modules' #do 
-    #GeneticAlgorithm::Standard.included_modules.should be_include FitnessCaching
-    #GeneticAlgorithm::Standard.included_modules.should be_include Reporter
-  #end
-  
   it 'should have ancestors' do 
     [GeneticAlgorithm::Base, DarwinianProcess].each do |ancestor|
       GeneticAlgorithm::Standard.ancestors.should be_include ancestor

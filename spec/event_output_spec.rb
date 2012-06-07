@@ -59,7 +59,7 @@ describe EventOutput do
     end 
 
     it 'should call show_breeding_event on each 10th single_generation (with interval 10)' do 
-      @ga.interval_for[:breeding_event] = 10
+      @ga.config[:show_breeding_event] = :every_10
       @ga.should_receive(:show_breeding_event).exactly(3).times
       @ga.evolve(30)
     end
@@ -348,3 +348,5 @@ describe EventOutput do
   end
 
 end
+
+

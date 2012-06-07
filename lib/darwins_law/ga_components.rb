@@ -1,8 +1,15 @@
 module FitnessCaching
   attr_accessor :cache, :cache_fitness
 
+  def config
+    defaults = {:cache_fitness => true}
+    conf = super
+    @config = defaults.merge(conf)
+  end
+
   def fitness_of genome
     @cache_fitness = true unless defined? @cache_fitness
+    #@cache = {} unless @cache_fitness 
     return super unless @cache_fitness  #return fitness as norm if caching is off   
     update_cache_for(genome, super) unless cache[genome] #update cache if value not present. call fitness_of in superclass to get fitness evaluated
     @cache[genome] #return cached value
@@ -25,10 +32,25 @@ module EventOutput
   CurBestStr = "*"
   NewBestStr = "**"
 
+
+  def config
+    defaults = {:show_breeding_event => true}
+    conf = super
+    conf = defaults.merge(conf)
+    if conf[:show_breeding_event].to_s.include?("every")
+      conf[:interval_for][:breeding_event] = conf[:show_breeding_event].to_s.sub("every_","").to_i 
+    elsif conf[:show_breeding_event].eql?(:with_best)
+      conf[:interval_for][:breeding_event] = :with_best
+    else
+      conf[:interval_for][:breeding_event] = 1
+    end
+    @config = conf
+  end
+
   def single_generation
     @mut_count = 0
     super
-    show_breeding_event if @verbose && should_show?(:breeding_event)
+    show_breeding_event if should_show?(:breeding_event)
   end
 
   def mutate gene
@@ -79,17 +101,55 @@ module EventOutput
     d.hexdigest
   end  
 
-  #called in GeneticAlgorithm::Base if it is initialized with the :show_breeding_event arg
-  def set_interval args
-    if args[:show_breeding_event].eql?(true) || args[:show_breeding_event].eql?(:each_time)
-      @interval_for[:breeding_event] = 1 
-    elsif args[:show_breeding_event].to_s.include?("every")  
-      @interval_for[:breeding_event] = args[:show_breeding_event].to_s.sub("every_","").to_i 
-    elsif args[:show_breeding_event].eql?(:with_best)
-      @interval_for[:breeding_event] = :with_best
-    else
-      @interval_for[:breeding_event] = nil
+
+
+end
+
+module ConvergenceMonitor
+  attr_accessor :convergence
+
+  def config
+    defaults = {}
+    conf = super
+    conf[:interval_for][:record_convergence] = 1
+    conf[:interval_for][:current_convergence] = 1
+    @config = conf
+  end
+  
+
+  def single_generation
+    @convergence ||= []
+    super
+    @convergence << [@current_generation, current_convergence] if should_do?(:record_convergence)
+    show_current_convergence(:as_percent_bar) if should_show?(:current_convergence)
+  end
+
+  def current_convergence
+    n = @population.group_by{|genome| genome}.sort_by{|i| i.last.size}.last.last.size.to_f
+    s = @population.size.to_f
+    i = (n/s)
+  end
+
+
+  def show_current_convergence as = :as_percent
+    case as
+    when :as_percent
+      puts "Population is #{current_convergence*100}% converged"
+    when :as_percent_bar
+      gen = @current_generation
+      c = current_convergence
+      s = Array.new([0,(6 - gen.to_s.length)].max){" "}.join
+      t = 50 #total size
+      m = (c * t).round #maker size
+      g = (t - m) #size of whitespace (gap)
+      
+      puts "#{s}#{gen} |#{Array.new(m){'='}.join}#{Array.new(g){' '}.join}|#{(c*100).round(2)}%"
+
+    when :as_plot
+
+
     end
+
   end
 
 
