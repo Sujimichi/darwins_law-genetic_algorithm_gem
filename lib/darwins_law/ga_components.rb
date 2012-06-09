@@ -154,15 +154,3 @@ module ConvergenceMonitor
 
 
 end
-
-module PopulationTools
-
-  def ordered_population
-    population.sort_by{|member| fitness(member)}.reverse
-  end
-
-  def best
-    ordered_population.first
-  end
-
-end
