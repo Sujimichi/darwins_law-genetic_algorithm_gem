@@ -22,7 +22,7 @@ The *fitness* *function* is given as a Proc which you define in the initializati
 
 In addition to selection the other two core aspects to evolution are recombination and mutation.  As well as setting a rate for mutation you can also define the mutation function, also as a Proc or select from two predefined functions by passing the symbols :decimal or :binary (see more later).  The use of recombination and selection go hand in hand and there are two types of genetic algorithm (GA) which do slightly different styles; <tt>GA::Standard</tt> and <tt>GA::Microbial</tt>.
 
-The Standard GA selects two members (parents) from the population at random and produces an offspring by recombination of the parents' genomes, by default 50% of the offspring’s genes comes from either parent.  A third member is selected at random as a contestant for the offspring and on;y the 'fittest' one will be allowed back to the population.
+The Standard GA selects two members (parents) from the population at random and produces an offspring by recombination of the parents' genomes, by default 50% of the offspring’s genes comes from either parent.  A third member is selected at random as a contestant for the offspring and only the 'fittest' one will be allowed back to the population.
 
 
 The Microbial style selects two members at random and determines which is fitter.  It then overwrites a % (70% by default) of the weaker members genome with genes from the fitter one.
@@ -32,18 +32,17 @@ The Microbial style selects two members at random and determines which is fitter
 ==Basic Usage
 This is not yet on rubygems so you need to clone this repo and run <tt>rake install</tt> inside the cloned repo.  Then you can <tt>require 'darwins_law'</tt> where you want to use it.
 
-Then initialize the Standard or Microbial GA from the class <tt>GA</tt> or <tt>GeneticAlgorithm</tt>.
+You can initialize the Standard or Microbial GA from the class <tt>GA</tt> or <tt>GeneticAlgorithm</tt>.  Both GAs inherit the same Base class so they are used in the same way and are interchangeable.  The args are given as a hash and the same args can be supplied to either GA.
 
-  ga = GeneticAlgorithm::Standard.new(args)   # or GA::Standard.new(args)
-  ga = GeneticAlgorithm::Microbial.new(args)  # or GA::Microbial.new(args)
-
-Both GAs inherit the same Base class so they are used in the same way and are interchangeable.  The args are given as a hash and the same args can be supplied to either GA.
-
-  ga = GeneticAlgorithm::Standard.new(:gene_length => 10, :popsize => 30, :mutation_rate => 0.1,
+  args = {:gene_length => 10, :popsize => 30, :mutation_rate => 0.1,
     :fitness_function =>  Proc.new{|genome|
       #some custom fitness evaluation logic
     }
-  )
+  }
+
+  ga_standard  = GeneticAlgorithm::Standard.new(args)   # or GA::Standard.new(args)
+  ga_microbial = GeneticAlgorithm::Microbial.new(args)  # or GA::Microbial.new(args)
+
 
 All args are optional and have default values but without a valid custom fitness function it is rather meaningless!  See below for the full set of args and details about adding a fitness function.
 
