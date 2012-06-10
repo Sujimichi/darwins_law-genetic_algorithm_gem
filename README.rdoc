@@ -1,6 +1,9 @@
 =DarwinsLaw - Genetic Algorithm Gem
 
+Currently under development but usable.
+
 DarwinsLaw is a Ruby gem which provides an easy to use Genetic Algorithm(GA) which can be extended with a number of modules to produce different outputs and alter GA performance.
+
 
   ga = GA::Standard.new(:gene_length => 10, :mutation_rate => 0.2, :fitness => Proc.new{|genome|
     #add code to evaluate genome and return fitness score
