@@ -1,38 +1,36 @@
 =DarwinsLaw - Genetic Algorithm Gem
 
-Currently under development but usable.
+====Currently under development but usable.
 
-DarwinsLaw is a Ruby gem which provides an easy to use Genetic Algorithm(GA) which can be extended with a number of modules to produce different outputs and alter GA performance.
+DarwinsLaw is a Ruby gem providing an easy to use Genetic Algorithm(GA).  Evolution is performed according to a selection criteria, known as the *fitness* *function*, which you specify.
 
-
-  ga = GA::Standard.new(:gene_length => 10, :mutation_rate => 0.2, :fitness => Proc.new{|genome|
-    #add code to evaluate genome and return fitness score
+  ga = GeneticAlgorithm::Standard.new(:gene_length => 10, :fitness_function => Proc.new{|genome|
+    #add code to evaluate genome and return numerical fitness score
   })
-  ga.evolve                 #run evolution with given/default settings.
-  ga.best                   #=> {:genome => Array, :fitness => Int/Float}
+  ga.evolve   #run evolution with given/default settings.
+  ga.best     #=> {:genome => Array, :fitness => Int/Float}
+
+
+Optional config options can be supplied to control aspects of evolution ie; rates for recombination and mutation, population size, genome length and others (see later).  The GA can also be extended with a number of modules which alter certain aspects of it, ie;
 
   ga.extend(FitnessCaching) #add module to cache fitness of evaluated genomes.
-  ga.evolve                 #GA will run faster, re-encountered genomes are not re-tested
+  ga.evolve                 #GA will run faster, re-encountered genomes will not be re-tested
+
+See later on for details on the different modules (FitnessCaching, EventOutput and ConvergenceMonitor.  more to come)
 
 
-Additional arguments (see later) can be supplied to control how evolution runs and further modules can be added to change specific aspects of the GA (see later).
+There are (currently) two slightly different styles of algorithm; <tt>GeneticAlgorithm::Standard</tt> and <tt>GeneticAlgorithm::Microbial</tt>.  They differ in the way in which the components of evolution (selection, recombination, mutation and competition) are used.  However as they inherit the same class (<tt>GeneticAlgorithm::Base</tt>) they are used in exactly the same way and are totally interchangeable.
 
-The *fitness* *function* is given as a Proc which you define in the initialization of the GA, it determines how effective a genome is and forms the basis for selection.  It is specific to your chosen application, so I'll leave that up to you!  See more about writing the fitness function later.
+* The Standard GA selects two members (parents) from the population at random and produces an offspring by recombination of the parents' genomes, by default 50% of the offspring’s genes comes from either parent.  A third member is selected at random as a contestant for the offspring and only the 'fittest' one will be allowed back to the population.
 
-
-In addition to selection the other two core aspects to evolution are recombination and mutation.  As well as setting a rate for mutation you can also define the mutation function, also as a Proc or select from two predefined functions by passing the symbols :decimal or :binary (see more later).  The use of recombination and selection go hand in hand and there are two types of genetic algorithm (GA) which do slightly different styles; <tt>GA::Standard</tt> and <tt>GA::Microbial</tt>.
-
-The Standard GA selects two members (parents) from the population at random and produces an offspring by recombination of the parents' genomes, by default 50% of the offspring’s genes comes from either parent.  A third member is selected at random as a contestant for the offspring and only the 'fittest' one will be allowed back to the population.
-
-
-The Microbial style selects two members at random and determines which is fitter.  It then overwrites a % (70% by default) of the weaker members genome with genes from the fitter one.
+* The Microbial style selects two members at random and determines which is fitter.  It then overwrites a % of the weaker members genome with genes from the fitter one (70% by default).
 
 
 
 ==Basic Usage
 This is not yet on rubygems so you need to clone this repo and run <tt>rake install</tt> inside the cloned repo.  Then you can <tt>require 'darwins_law'</tt> where you want to use it.
 
-You can initialize the Standard or Microbial GA from the class <tt>GA</tt> or <tt>GeneticAlgorithm</tt>.  Both GAs inherit the same Base class so they are used in the same way and are interchangeable.  The args are given as a hash and the same args can be supplied to either GA.
+You can initialize the Standard or Microbial GA from the class <tt>GeneticAlgorithm</tt> or <tt>GA</tt>.  Both GAs inherit the same Base class so they are used in the same way and are interchangeable.  The args are given as a hash and the same args can be supplied to either GA.
 
   args = {:gene_length => 10, :popsize => 30, :mutation_rate => 0.1,
     :fitness_function =>  Proc.new{|genome|
@@ -40,8 +38,8 @@ You can initialize the Standard or Microbial GA from the class <tt>GA</tt> or <t
     }
   }
 
-  ga_standard  = GeneticAlgorithm::Standard.new(args)   # or GA::Standard.new(args)
-  ga_microbial = GeneticAlgorithm::Microbial.new(args)  # or GA::Microbial.new(args)
+  ga_standard  = GeneticAlgorithm::Standard.new(args)   #or GA::Standard.new(args)
+  ga_microbial = GeneticAlgorithm::Microbial.new(args)  #or GA::Microbial.new(args)
 
 
 All args are optional and have default values but without a valid custom fitness function it is rather meaningless!  See below for the full set of args and details about adding a fitness function.
@@ -56,7 +54,7 @@ Call <tt>evolve</tt> to run the GA for the default number of generations or pass
 
 ====Basic Args
 
-* <tt>:generations => 500     #Integer  </tt> - sets how many cycles (how long) the GA will run.
+* <tt>:generations => 500     #Integer  </tt> - sets how many cycles (how long) the GA will run for.
 
 * <tt>:popsize => 30          #Integer  </tt> - controls the size of the population (the gene pool).  Larger populations have more diversity but result in slower evolution.
 
@@ -64,7 +62,7 @@ Call <tt>evolve</tt> to run the GA for the default number of generations or pass
 
 * <tt>:mutation_rate => 0.1   #Float 0.0 to 1.0</tt> - defines how often a gene in a genome will mutate.  The chance of mutation takes :gene_length into account; with a 10 gene genome and a mutation rate of 0.1 the probability of each gene being mutated is 0.01, but with a 100 gene genome and the same mutation rate the probability for each gene is 0.0001
 
-* <tt>:cross_over_rate => 0.5 #Float 0.0 to 1.0</tt> - controls the share of parent genomes used in producing an offspring.  0.5 means 50% from either parent which is ideal for Standard evolution.  When using Microbial evolution a cross over rate of 0.7 is more ideal.  Either will run with any > 0 cross over rate, the right rate depends on complexity of evolutionary search space.
+* <tt>:cross_over_rate => 0.5 #Float 0.0 to 1.0</tt> - controls the share of parent genomes used in producing an offspring.  0.5 means 50% from either parent which is ideal for Standard evolution.  When using Microbial evolution the default cross over rate is 0.7, meaning more genes will come from the fitter parent.  Either will run with any > 0 cross over rate, the right rate depends on complexity of evolutionary search space.
 
 * <tt>:init_pop_with => Proc.new{ rand.round(2) } #Proc, Numerical or Symbol </tt> - sets how the population will be initialized.  If given a int/float value it will init the population so each gene of each genome has that value.  It can also take the symbol :rand in which case each gene will be a random number between 0 and 1.  init_with_pop can be a Proc that should return a value which can be used for each gene. ie
 
@@ -72,7 +70,7 @@ Call <tt>evolve</tt> to run the GA for the default number of generations or pass
     #initialise population with each gene in each genome as a random number between -5 and +5.
 
 
-* <tt>:mutation_function => :rand # Symbol or Proc</tt> - defines how a gene will be mutated.  When given the symbol :rand a gene will be mutated by a small +/- value, with :binary it will mutate 0->1 and 1->0.  It also takes a Proc which will be passed the gene to be mutated and should return the mutated value.
+* <tt>:mutation_function => :rand # Symbol or Proc</tt> - defines how a gene will be mutated.  When given the symbol <tt>:rand</tt> a gene will be mutated by a small +/- value, with <tt>:binary</tt> it will mutate 0->1 and 1->0.  It also takes a Proc which will be passed the gene to be mutated and should return the mutated gene.
 
     :mutation_function => Proc.new{|gene| gene + (rand - 0.5) }
     #decimal mutation function.  adds small +/- rand value.  equivalent to :mutation_function => :decimal
@@ -106,7 +104,9 @@ Call <tt>evolve</tt> to run the GA for the default number of generations or pass
       score = evaluate_results(results) #some method to parse the results and return a score
     }
 
-In addition to the above args which effect evolution there are additional args which effect GA output and extend GA functionality.
+
+====Additional Args
+In addition to the above args which effect evolution there are args which effect GA output and extend its functionality.
 
 * <tt>:verbose => false</tt> - default is false but when set to true the GA will output the current best fitness score every 100 generations ie;
 
@@ -129,7 +129,7 @@ The GAs can be have additional functionality added by extending them with module
 
 ===FitnessCaching
 
-The FitnessCaching module enables the GA to track the fitness of genomes its already encountered.  The chances are the same member will be selected from the population several times so it only needs it fitness evaluating one.  This is useful with lengthy fitness evaluations and in convergent populations but will become less useful in more diverse populations (large pop, long genomes, high mutation).
+The FitnessCaching module enables the GA to track the fitness of genomes its already encountered.  The chances are the same member will be selected from the population several times so it only needs it fitness evaluating once.  This is useful with lengthy fitness evaluations and in convergent populations but will become less useful in more diverse populations (large pop, long genomes, high mutation).
 
   ga = GeneticAlgorithm::Standard.new(:cache_fitness => true)
 
@@ -149,6 +149,25 @@ It shows the genomes of the parents and the resultant offspring.  with short gen
   b2686ce250df9a96fdd1a4730a15ac97--\ <= 9.0
                                      }>-Mutant(1)-7f485549ec3f1b8a3fcdb3397fc15381
   ab070353eb3d8c56fe2fb5b782efbae3--/ <= 7.0
+
+In addition to showing the genome (which really is not very helpful) it can output a string which is generated in the fitness function.  An extra variable is now passed into the fitness_function Proc which is a hash.  The key :phenotype can be set and will be displayed in the event output.
+
+  :fitness => Proc.new{|genome, data|
+    results = some_test(genome)
+    total_points, bonus_points, penalty = some_evaluation_of(results)
+    data[:phenotype] = "got a total score of #{total_points} with a bonus of #{bonus_points} and #{penalty} penalties"
+    fitness = total_points + bonus_points - penalty
+  }
+
+Now the output will be;
+
+  got a total score of 6 with a bonus of 3 and 0 penalties
+  b2686ce250df9a96fdd1a4730a15ac97--\ <= 9.0
+                                     }>-Mutant(1)-7f485549ec3f1b8a3fcdb3397fc15381
+  ab070353eb3d8c56fe2fb5b782efbae3--/ <= 7.0
+  got a total score of 6 with a bonus of 2 and 1 penalties
+
+
 
 You can add the module by passing an arg in the initialization of the GA
 
@@ -190,7 +209,9 @@ The output will be something like;
   215 |======================                            |43.0%
 
 
+===More Modules
+I have plans for some more modules.  One which will use the ConvergenceMonitor module and dynamically adjust mutation rates.  I also aim to add a module which will enable threaded execution of fitness evaluations.
 
 
-==Whats with the name
+==What’s with the name
 You know.
